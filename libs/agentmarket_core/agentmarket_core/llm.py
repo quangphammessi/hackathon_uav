@@ -66,6 +66,55 @@ The previous retrieval attempt failed a strict schema/attribute check. Given the
 and the validation error, produce a NARROWER search query likely to retrieve a candidate that \
 will pass. Respond with ONLY a single JSON object: {"search_query": "<revised query>"}"""
 
+# The intent decoder's model half. It is allowed to propose predicates only
+# from the closed vocabulary below; agentmarket_core.domain.intent discards
+# anything else and re-runs its deterministic rules over the raw query
+# afterwards, so a bad decode here can widen coverage but never corrupt it.
+INTENT_SYSTEM_PROMPT = """You decode shopping requests for a merchant's B2A commerce API. \
+An autonomous buying agent relays what its human owner wants, in the owner's own words. Your job \
+is to translate stated human outcomes into predicates over product attributes. Do NOT copy \
+keywords: map the underlying need. "Never hiked before" is experience_level beginner, not the \
+word "never".
+
+Respond with ONLY one JSON object:
+{
+  "search_query": "<short phrase describing the KIND of product, no pronouns, no budget, no names>",
+  "interpreted_need": "<one sentence: what the buyer actually needs>",
+  "experience_level": "beginner" | "intermediate" | "expert" | null,
+  "use_cases": [<0-4 of: day_hike, multi_day_trek, camping, wet_weather, cold_weather, alpine, first_hike, joint_comfort, knee_support>],
+  "values": [<0-4 of: ethical_labour, recycled_materials, repairable, low_carbon_transport, pfc_free, animal_welfare>],
+  "budget": <number or null>,
+  "bundle_intent": <true if the buyer wants a kit/set of several items, else false>,
+  "constraints": [
+    {"field": "<one of: experience_level, ease_of_use, break_in_required, weight_g, waterproof_rating, temp_rating_c, comfort_rating_c, use_cases, wide_fit, joint_support, machine_washable, capacity_l, r_value, category, lumens, insulated_hours>",
+     "op": "lte" | "gte" | "eq" | "not_eq" | "contains" | "in",
+     "value": <number, string or boolean>,
+     "kind": "hard" | "soft",
+     "source_phrase": "<the exact words from the request that imply this>",
+     "rationale": "<why this predicate follows from those words>"}
+  ]
+}
+Use "hard" only for requirements the buyer stated as non-negotiable. Preferences are "soft"."""
+
+# The rationale composer. It is given a fact sheet and may use nothing else;
+# every number it writes is checked against that sheet before the text ships
+# (see domain/rationale.check_grounding).
+RATIONALE_SYSTEM_PROMPT = """You write the justification a merchant's system returns to an \
+autonomous buying agent explaining why a product matches its owner's request.
+
+You are given a JSON fact sheet. Rules, enforced by an automated check that will discard your \
+text if broken:
+1. Use ONLY facts present in the fact sheet. Invent nothing.
+2. Every number you write must appear in the fact sheet.
+3. Do not describe the product as ethical, sustainable, recycled, durable or low-carbon unless \
+that exact claim appears in "verified_claims".
+4. No superlatives: never "best", "perfect", "guaranteed", "unbeatable", "top-rated".
+5. Mention anything in "requirements_not_met" honestly.
+
+Write 2-4 sentences of plain prose, addressed to the buying agent, explaining how the specific \
+requirements were met and citing the evidence. Respond with ONLY a JSON object: \
+{"justification": "<your text>"}"""
+
 
 def is_ollama_available() -> bool:
     """Quick reachability check (short timeout) -- used for the startup/demo
@@ -131,6 +180,41 @@ def plan_query(query: str) -> dict:
             "`ollama pull %s` been run? Falling back to heuristic.", exc, OLLAMA_MODEL,
         )
         return _heuristic_plan(query)
+
+
+def decode_intent(query: str) -> dict | None:
+    """Ask the model for a structured decode. Returns None when unavailable.
+
+    None rather than a guess: the caller's rule layer is a complete decoder on
+    its own, so "no model" and "an empty decode" must not look the same.
+    """
+    if not LLM_ENABLED:
+        return None
+    try:
+        parsed = _extract_json(_call_ollama(INTENT_SYSTEM_PROMPT, query))
+    except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        log.warning("Ollama intent decode failed (%s); using deterministic rules only", exc)
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    return parsed
+
+
+def compose_rationale(fact_sheet: dict) -> str:
+    """Write the justification from a fact sheet. Empty string if unavailable.
+
+    The caller treats an empty return as "use the template", and checks
+    whatever is returned against the fact sheet before shipping it.
+    """
+    if not LLM_ENABLED:
+        return ""
+    try:
+        payload = json.dumps(fact_sheet, default=str)[:6000]
+        parsed = _extract_json(_call_ollama(RATIONALE_SYSTEM_PROMPT, payload))
+        return str(parsed.get("justification") or "").strip()
+    except (httpx.HTTPError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        log.warning("Ollama rationale composition failed (%s); using template", exc)
+        return ""
 
 
 def repair_query(original_query: str, error: str) -> str:

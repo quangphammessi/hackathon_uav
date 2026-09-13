@@ -75,7 +75,7 @@ class PaymentOrchestrator:
             )
             # A rejected purchase is still a lost transaction: tell the
             # pricing engine, or the bandit learns from a biased sample.
-            self._record_outcome(cart.quote_id, won=False)
+            self._record_outcomes(cart, won=False)
             self._persist(result, intent, cart, agent_id, principal_id)
             if self.bus:
                 self.bus.publish(TOPIC_PAYMENT_REJECTED, {
@@ -96,7 +96,7 @@ class PaymentOrchestrator:
             sku=cart.sku, amount=cart.amount, currency=cart.currency,
             rail=rail, settlement_ref=ref, status="SETTLED",
         )
-        self._record_outcome(cart.quote_id, won=True)
+        self._record_outcomes(cart, won=True)
         self._persist(result, intent, cart, agent_id, principal_id)
         if self.bus:
             self.bus.publish(TOPIC_PAYMENT_SETTLED, {
@@ -115,6 +115,10 @@ class PaymentOrchestrator:
             return "MANDATE_CHAIN_MISMATCH"
         if cart.amount > intent.max_amount:
             return "EXCEEDS_INTENT_MANDATE_CAP"
+
+        if cart.items:
+            return self._reject_reason_bundle(cart)
+
         if not self.pricing.is_quote_valid(cart.quote_id, cart.sku, cart.amount):
             return "QUOTE_EXPIRED_OR_MISMATCHED"
 
@@ -123,12 +127,44 @@ class PaymentOrchestrator:
             return verification.reason_code or "VERIFICATION_FAILED"
         return None
 
+    def _reject_reason_bundle(self, cart: CartMandate) -> str | None:
+        """Re-validate every line of a multi-item cart.
+
+        Per line, not per total: a bundle is where an expired quote or a
+        revoked credential is easiest to hide, because the arithmetic still
+        works out. One bad component fails the whole cart -- partially
+        settling a kit would leave the buyer with a set that no longer does
+        what it was sold to do.
+        """
+        line_total = round(sum(item.amount for item in cart.items), 2)
+        # Bundle pricing discounts the sum, so the cart total must be at or
+        # below the line total, never above it.
+        if cart.amount > line_total + 0.01:
+            return "BUNDLE_TOTAL_EXCEEDS_LINES"
+
+        for item in cart.items:
+            if not self.pricing.is_quote_valid(item.quote_id, item.sku, item.amount):
+                return "QUOTE_EXPIRED_OR_MISMATCHED"
+            verification = self.verification.verify(item.trust_token_ref)
+            if verification.status != "PASS":
+                return verification.reason_code or "VERIFICATION_FAILED"
+        return None
+
     # -- side effects -------------------------------------------------------
-    def _record_outcome(self, quote_id: str, won: bool) -> None:
-        try:
-            self.pricing.record_outcome(quote_id, won)
-        except Exception:  # noqa: BLE001 -- feedback must never fail a settlement
-            log.warning("could not record pricing outcome for quote_id=%s", quote_id, exc_info=True)
+    def _record_outcomes(self, cart: CartMandate, won: bool) -> None:
+        """Feed every quote in the cart back to the bandit.
+
+        Every line, not just the headline one: a bundle's components each got
+        their own quote from the spread tuner, so reporting only one of them
+        teaches the learner about a single SKU and leaves the rest of the kit
+        looking like it was never offered at all.
+        """
+        quote_ids = [item.quote_id for item in cart.items] or [cart.quote_id]
+        for quote_id in dict.fromkeys(quote_ids):
+            try:
+                self.pricing.record_outcome(quote_id, won)
+            except Exception:  # noqa: BLE001 -- feedback must never fail a settlement
+                log.warning("could not record pricing outcome for quote_id=%s", quote_id, exc_info=True)
 
     def _persist(self, result: OrderResult, intent, cart, agent_id, principal_id) -> None:
         if not self.persist:

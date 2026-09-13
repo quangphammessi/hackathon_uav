@@ -28,6 +28,29 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE INDEX IF NOT EXISTS products_category_idx ON products (category);
 CREATE INDEX IF NOT EXISTS products_gtin_idx ON products (gtin);
 
+-- Values claims the merchant *asserts* about a product ("ethically made",
+-- "recycled"). Asserting is free, so nothing downstream is allowed to treat
+-- this column as evidence: a claim only satisfies a buyer's values constraint
+-- once `provenance_events` contains a matching certification event from an
+-- independent auditor (see domain/claims.py). Storing the assertion anyway is
+-- what makes the gap detectable -- an unattested claim is a finding, not a
+-- silence.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS claims JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'core';
+
+-- Product graph edges. Bundling walks these rather than guessing from
+-- category, because "what goes with this" is merchandising knowledge, not
+-- something a similarity score can recover: a hydration bladder is not
+-- semantically similar to a backpack, it is *complementary* to one.
+CREATE TABLE IF NOT EXISTS product_relations (
+    sku         TEXT NOT NULL REFERENCES products(sku) ON DELETE CASCADE,
+    related_sku TEXT NOT NULL REFERENCES products(sku) ON DELETE CASCADE,
+    relation    TEXT NOT NULL,          -- complement | alternative
+    note        TEXT,
+    PRIMARY KEY (sku, related_sku, relation)
+);
+CREATE INDEX IF NOT EXISTS product_relations_sku_idx ON product_relations (sku, relation);
+
 -- Semantic layer. Dimension is fixed by EMBEDDING_DIMENSIONS so swapping the
 -- embedding model never forces a column-type migration.
 CREATE TABLE IF NOT EXISTS product_embeddings (
@@ -166,6 +189,33 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS orders_created_idx ON orders (created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Agent-to-agent negotiation. Persisted rather than held in memory for the
+-- same reason quotes are: the buyer's agent may counter against a different
+-- replica than the one that made the opening offer, and every concession has
+-- to be reconstructable afterwards -- "why did we sell at that price" is an
+-- audit question, not a log line.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS negotiations (
+    negotiation_id TEXT PRIMARY KEY,
+    agent_id       TEXT NOT NULL,
+    sku            TEXT NOT NULL,
+    opening_amount NUMERIC(12,2) NOT NULL,
+    current_amount NUMERIC(12,2) NOT NULL,
+    current_quote  TEXT,
+    status         TEXT NOT NULL,       -- OPEN | CONCEDED | ALTERNATIVE | HELD | EXHAUSTED | ACCEPTED
+    rounds         JSONB NOT NULL DEFAULT '[]'::jsonb,
+    -- The decoded intent and the candidate set from the opening offer. A
+    -- counter-offer has to be answered against what the buyer originally
+    -- asked for, and the round may land on a different replica than the one
+    -- that made the offer, so the context travels with the negotiation rather
+    -- than living in the process that started it.
+    context        JSONB NOT NULL DEFAULT '{}'::jsonb,
+    opened_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS negotiations_agent_idx ON negotiations (agent_id, opened_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- Observability (§5.5)

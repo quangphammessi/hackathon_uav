@@ -17,10 +17,12 @@ from agentmarket_core.adapters.bus import EventBus
 from agentmarket_core.adapters.productstore import build_product_store
 from agentmarket_core.adapters.vectorstore import build_vector_store
 from agentmarket_core.clients import PricingClient, VerificationClient
+from agentmarket_core.domain.negotiation import NegotiationStore
 from agentmarket_core.service import create_app
 from agentmarket_core.tracing import Tracer
 
 from graph import StorefrontGraph
+from negotiate import NegotiationAgent, NegotiationError
 
 log = logging.getLogger("agentmarket.storefront.api")
 
@@ -28,7 +30,9 @@ product_store = build_product_store()
 vector_store = build_vector_store()
 pricing_client = PricingClient()
 verification_client = VerificationClient()
+negotiation_store = NegotiationStore()
 graph: StorefrontGraph | None = None
+negotiator: NegotiationAgent | None = None
 
 
 class QueryRequest(BaseModel):
@@ -37,14 +41,34 @@ class QueryRequest(BaseModel):
     query: str
 
 
+class NegotiateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    agent_id: str = ""
+    negotiation_id: str | None = None
+    offer_id: str | None = None
+    sku: str | None = None
+    target_amount: float
+    reason: str = ""
+
+
 def _startup(bus: EventBus) -> None:
-    global graph
+    global graph, negotiator
+    tracer = Tracer(bus=bus, service="storefront")
     graph = StorefrontGraph(
         product_store=product_store,
         vector_store=vector_store,
-        tracer=Tracer(bus=bus, service="storefront"),
+        tracer=tracer,
         pricing=pricing_client,
         verification=verification_client,
+        bus=bus,
+        negotiations=negotiation_store,
+    )
+    negotiator = NegotiationAgent(
+        product_store=product_store,
+        pricing=pricing_client,
+        verification=verification_client,
+        tracer=tracer,
+        store=negotiation_store,
         bus=bus,
     )
 
@@ -79,6 +103,38 @@ def query(req: QueryRequest) -> dict:
     if not req.query.strip():
         raise HTTPException(status_code=422, detail="query must not be empty")
     return graph.run(agent_id=req.agent_id, query=req.query)
+
+
+@app.post("/v1/negotiate", tags=["storefront"])
+def negotiate(req: NegotiateRequest) -> dict:
+    """Answer a counter-offer from the buyer's agent.
+
+    The buyer's agent sends a number and the negotiation id it was handed with
+    the offer. Everything else -- what was originally asked for, which
+    alternatives qualify, what the kit contains -- is already held by the
+    merchant, so a counter-offer costs the buyer one field.
+    """
+    if not req.negotiation_id:
+        raise HTTPException(
+            status_code=400,
+            detail="negotiation_id is required; it is returned with every offer",
+        )
+    try:
+        result = negotiator.counter(
+            negotiation_id=req.negotiation_id,
+            target_amount=req.target_amount,
+            agent_id=req.agent_id,
+            reason=req.reason,
+        )
+    except NegotiationError as exc:
+        status = 404 if exc.code == "NEGOTIATION_NOT_FOUND" else 503
+        raise HTTPException(status_code=status, detail=exc.detail) from exc
+    return result.model_dump()
+
+
+@app.get("/v1/negotiations", tags=["storefront"])
+def negotiations(limit: int = 25) -> dict:
+    return {"negotiations": negotiation_store.recent(limit)}
 
 
 @app.get("/v1/catalog", tags=["storefront"])

@@ -34,9 +34,21 @@ start_one() {
   # caller's pipe open and `./run_local.sh start | tee` never returns.
   ( cd "${ROOT}/services/${name}" && \
     SERVICE_NAME="$name" setsid python3 -m uvicorn app:app --host 0.0.0.0 --port "$port" \
-      > "${RUN_DIR}/${name}.log" 2>&1 < /dev/null &
-    echo $! > "${RUN_DIR}/${name}.pid" )
-  echo "  ${name} -> :${port} (pid $(cat "${RUN_DIR}/${name}.pid" 2>/dev/null))"
+      > "${RUN_DIR}/${name}.log" 2>&1 < /dev/null & )
+  # The PID is resolved from the port rather than from `$!`. setsid forks when
+  # the shell has already made it a process-group leader, so `$!` is often the
+  # pid of a process that has already exited -- which makes `stop` silently do
+  # nothing and leaves the next `start` binding against a service that is
+  # still running the previous build. That failure is invisible until you
+  # wonder why a code change had no effect.
+  local pid=""
+  for _ in $(seq 1 40); do
+    pid="$(pgrep -f "uvicorn app:app --host 0.0.0.0 --port ${port}$" | head -1)"
+    [ -n "$pid" ] && break
+    sleep 0.25
+  done
+  [ -n "$pid" ] && echo "$pid" > "${RUN_DIR}/${name}.pid"
+  echo "  ${name} -> :${port} (pid ${pid:-unknown})"
 }
 
 case "${1:-start}" in
@@ -56,10 +68,15 @@ case "${1:-start}" in
     done
     ;;
   stop)
-    for f in "${RUN_DIR}"/*.pid; do
-      [ -e "$f" ] || continue
-      kill "$(cat "$f")" 2>/dev/null && echo "stopped $(basename "$f" .pid)"
-      rm -f "$f"
+    for s in "${!PORTS[@]}"; do
+      # By port, not by recorded pid: the pid file can be stale or wrong, and
+      # a "stopped" message for a process that is still serving requests is
+      # worse than no message at all.
+      pids="$(pgrep -f "uvicorn app:app --host 0.0.0.0 --port ${PORTS[$s]}$" || true)"
+      if [ -n "$pids" ]; then
+        kill $pids 2>/dev/null && echo "stopped ${s} (${pids})"
+      fi
+      rm -f "${RUN_DIR}/${s}.pid"
     done
     ;;
   status)

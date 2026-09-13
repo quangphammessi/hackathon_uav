@@ -1,40 +1,753 @@
 [
-  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-VN-14",  "actor": "Northstar Footwear Co.", "ts": "2026-08-02T01:00:00Z"},
-  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-VN-14",  "actor": "Northstar QC Lab",       "ts": "2026-08-03T04:30:00Z"},
-  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-VN-14",  "actor": "Northstar Footwear Co.", "ts": "2026-08-03T09:00:00Z"},
-  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SGN",       "actor": "PanTrans Logistics",     "ts": "2026-08-06T11:00:00Z"},
-
-  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-BD-02",  "actor": "AlpineDry Manufacturing", "ts": "2026-07-11T02:00:00Z"},
-  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-BD-02",  "actor": "AlpineDry QC Lab",        "ts": "2026-07-12T05:00:00Z"},
-  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-BD-02",  "actor": "AlpineDry Manufacturing", "ts": "2026-07-12T10:00:00Z"},
-  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-CGP",       "actor": "PanTrans Logistics",      "ts": "2026-07-15T08:00:00Z"},
-
-  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-VN-09",  "actor": "SummitShell Apparel",   "ts": "2026-08-05T01:30:00Z"},
-  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-VN-09",  "actor": "SummitShell QC Lab",    "ts": "2026-08-06T06:00:00Z"},
-  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-VN-09",  "actor": "SummitShell Apparel",   "ts": "2026-08-06T11:00:00Z"},
-  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SGN",       "actor": "PanTrans Logistics",    "ts": "2026-08-09T09:00:00Z"},
-
-  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-CN-21",  "actor": "PureFlow Filtration",  "ts": "2026-06-14T03:00:00Z"},
-  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-CN-21",  "actor": "PureFlow QC Lab",      "ts": "2026-06-15T07:00:00Z"},
-  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-CN-21",  "actor": "PureFlow Filtration",  "ts": "2026-06-15T12:00:00Z"},
-  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SHA",       "actor": "PanTrans Logistics",   "ts": "2026-06-18T10:00:00Z"},
-
-  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-CN-07",  "actor": "NovaBeam Electronics", "ts": "2026-08-01T02:00:00Z"},
-  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-CN-07",  "actor": "NovaBeam QC Lab",      "ts": "2026-08-02T05:30:00Z"},
-  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-CN-07",  "actor": "NovaBeam Electronics", "ts": "2026-08-02T09:00:00Z"},
-  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SHA",       "actor": "PanTrans Logistics",   "ts": "2026-08-05T07:00:00Z"},
-
-  {"sku": "0950600013480", "batch": "B-GD-2026-05", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-MN-03",  "actor": "GlacierDown Outdoor", "ts": "2026-05-20T02:00:00Z"},
-  {"sku": "0950600013480", "batch": "B-GD-2026-05", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-MN-03",  "actor": "GlacierDown Outdoor", "ts": "2026-05-21T09:00:00Z"},
-  {"sku": "0950600013480", "batch": "B-GD-2026-05", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-TAO",       "actor": "PanTrans Logistics",  "ts": "2026-05-24T08:00:00Z", "note": "quality_control event never received from Factory-MN-03 -- known chain gap for this batch"},
-
-  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-TW-05",  "actor": "TrekLite Composites",  "ts": "2026-08-09T02:00:00Z"},
-  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-TW-05",  "actor": "TrekLite QC Lab",      "ts": "2026-08-10T06:00:00Z"},
-  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-TW-05",  "actor": "TrekLite Composites",  "ts": "2026-08-10T10:00:00Z"},
-  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-KHH",       "actor": "PanTrans Logistics",   "ts": "2026-08-13T09:00:00Z"},
-
-  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-CN-11",  "actor": "CamelRidge Hydration", "ts": "2026-04-18T02:00:00Z"},
-  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-CN-11",  "actor": "CamelRidge QC Lab",    "ts": "2026-04-19T05:00:00Z"},
-  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-CN-11",  "actor": "CamelRidge Hydration", "ts": "2026-04-19T10:00:00Z"},
-  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SHA",       "actor": "PanTrans Logistics",   "ts": "2026-04-22T08:00:00Z"}
+  {
+    "sku": "0950600013435",
+    "batch": "B-TP-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-VN-14",
+    "actor": "Northstar Footwear Co.",
+    "ts": "2026-08-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013435",
+    "batch": "B-TP-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-VN-14",
+    "actor": "Northstar Footwear Co. QC Lab",
+    "ts": "2026-08-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013435",
+    "batch": "B-TP-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-14",
+    "actor": "Fair Labor Association",
+    "ts": "2026-08-03T07:00:00Z",
+    "note": "claim=ethical_labour; certificate=FLA-2026-4950; scope=batch"
+  },
+  {
+    "sku": "0950600013435",
+    "batch": "B-TP-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-14",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-08-03T08:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-4861; scope=batch"
+  },
+  {
+    "sku": "0950600013435",
+    "batch": "B-TP-2026-08",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-VN-14",
+    "actor": "Northstar Footwear Co.",
+    "ts": "2026-08-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013435",
+    "batch": "B-TP-2026-08",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-HAIPHONG",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-08-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013442",
+    "batch": "B-AD-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works",
+    "ts": "2026-07-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013442",
+    "batch": "B-AD-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works QC Lab",
+    "ts": "2026-07-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013442",
+    "batch": "B-AD-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-07",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-07-03T07:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-1799; scope=batch"
+  },
+  {
+    "sku": "0950600013442",
+    "batch": "B-AD-2026-07",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works",
+    "ts": "2026-07-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013442",
+    "batch": "B-AD-2026-07",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-HAIPHONG",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-07-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013459",
+    "batch": "B-SS-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-TW-03",
+    "actor": "Summit Textiles Ltd.",
+    "ts": "2026-08-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013459",
+    "batch": "B-SS-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-TW-03",
+    "actor": "Summit Textiles Ltd. QC Lab",
+    "ts": "2026-08-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013459",
+    "batch": "B-SS-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-TW-03",
+    "actor": "Control Union (Global Recycled Standard)",
+    "ts": "2026-08-03T07:00:00Z",
+    "note": "claim=recycled_materials; certificate=GRS-2026-1887; scope=batch"
+  },
+  {
+    "sku": "0950600013459",
+    "batch": "B-SS-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-TW-03",
+    "actor": "OEKO-TEX Eco Passport",
+    "ts": "2026-08-03T08:00:00Z",
+    "note": "claim=pfc_free; certificate=OEK-2026-8116; scope=batch"
+  },
+  {
+    "sku": "0950600013459",
+    "batch": "B-SS-2026-08",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-TW-03",
+    "actor": "Summit Textiles Ltd.",
+    "ts": "2026-08-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013459",
+    "batch": "B-SS-2026-08",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-KAOHSIUNG",
+    "actor": "Oceanic Container Co.",
+    "ts": "2026-08-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013466",
+    "batch": "B-PF-2026-06",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-MY-02",
+    "actor": "PureFlow Filtration",
+    "ts": "2026-06-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013466",
+    "batch": "B-PF-2026-06",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-MY-02",
+    "actor": "PureFlow Filtration QC Lab",
+    "ts": "2026-06-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013466",
+    "batch": "B-PF-2026-06",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-MY-02",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-06-03T07:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-2027; scope=batch"
+  },
+  {
+    "sku": "0950600013466",
+    "batch": "B-PF-2026-06",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-MY-02",
+    "actor": "PureFlow Filtration",
+    "ts": "2026-06-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013466",
+    "batch": "B-PF-2026-06",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-PORTKLANG",
+    "actor": "Oceanic Container Co.",
+    "ts": "2026-06-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013473",
+    "batch": "B-NB-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-CN-21",
+    "actor": "NovaBeam Electronics",
+    "ts": "2026-07-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013473",
+    "batch": "B-NB-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-CN-21",
+    "actor": "NovaBeam Electronics QC Lab",
+    "ts": "2026-07-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013473",
+    "batch": "B-NB-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-CN-21",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-07-03T07:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-9915; scope=batch"
+  },
+  {
+    "sku": "0950600013473",
+    "batch": "B-NB-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Port-SHENZHEN",
+    "actor": "SmartWay Verified Logistics",
+    "ts": "2026-07-03T08:00:00Z",
+    "note": "claim=low_carbon_transport; certificate=SWV-2026-2294; scope=batch"
+  },
+  {
+    "sku": "0950600013473",
+    "batch": "B-NB-2026-07",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-CN-21",
+    "actor": "NovaBeam Electronics",
+    "ts": "2026-07-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013473",
+    "batch": "B-NB-2026-07",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-SHENZHEN",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-07-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013480",
+    "batch": "B-GD-2026-05",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-CN-09",
+    "actor": "Glacier Down Mills",
+    "ts": "2026-05-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013480",
+    "batch": "B-GD-2026-05",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-CN-09",
+    "actor": "NSF Responsible Down Standard",
+    "ts": "2026-05-03T07:00:00Z",
+    "note": "claim=animal_welfare; certificate=RDS-2026-6336; scope=batch"
+  },
+  {
+    "sku": "0950600013480",
+    "batch": "B-GD-2026-05",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-CN-09",
+    "actor": "Glacier Down Mills",
+    "ts": "2026-05-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013480",
+    "batch": "B-GD-2026-05",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-NINGBO",
+    "actor": "Oceanic Container Co.",
+    "ts": "2026-05-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013497",
+    "batch": "B-TL-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-TW-05",
+    "actor": "TrekLite Composites",
+    "ts": "2026-08-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013497",
+    "batch": "B-TL-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-TW-05",
+    "actor": "TrekLite Composites QC Lab",
+    "ts": "2026-08-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013497",
+    "batch": "B-TL-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-TW-05",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-08-03T07:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-5204; scope=batch"
+  },
+  {
+    "sku": "0950600013497",
+    "batch": "B-TL-2026-08",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-TW-05",
+    "actor": "TrekLite Composites",
+    "ts": "2026-08-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013497",
+    "batch": "B-TL-2026-08",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-KAOHSIUNG",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-08-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013503",
+    "batch": "B-CR-2026-04",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-CN-11",
+    "actor": "CamelRidge Hydration",
+    "ts": "2026-04-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013503",
+    "batch": "B-CR-2026-04",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-CN-11",
+    "actor": "CamelRidge Hydration QC Lab",
+    "ts": "2026-04-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013503",
+    "batch": "B-CR-2026-04",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-CN-11",
+    "actor": "CamelRidge Hydration",
+    "ts": "2026-04-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013503",
+    "batch": "B-CR-2026-04",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-SHENZHEN",
+    "actor": "Oceanic Container Co.",
+    "ts": "2026-04-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-VN-14",
+    "actor": "Northstar Footwear Co.",
+    "ts": "2026-08-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-VN-14",
+    "actor": "Northstar Footwear Co. QC Lab",
+    "ts": "2026-08-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-14",
+    "actor": "Fair Labor Association",
+    "ts": "2026-08-03T07:00:00Z",
+    "note": "claim=ethical_labour; certificate=FLA-2026-7256; scope=batch"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-14",
+    "actor": "Control Union (Global Recycled Standard)",
+    "ts": "2026-08-03T08:00:00Z",
+    "note": "claim=recycled_materials; certificate=GRS-2026-7296; scope=batch"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-14",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-08-03T09:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-3961; scope=batch"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-VN-14",
+    "actor": "Northstar Footwear Co.",
+    "ts": "2026-08-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013510",
+    "batch": "B-SE-2026-08",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-HAIPHONG",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-08-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013527",
+    "batch": "B-DL-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works",
+    "ts": "2026-07-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013527",
+    "batch": "B-DL-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works QC Lab",
+    "ts": "2026-07-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013527",
+    "batch": "B-DL-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-07",
+    "actor": "Control Union (Global Recycled Standard)",
+    "ts": "2026-07-03T07:00:00Z",
+    "note": "claim=recycled_materials; certificate=GRS-2026-4959; scope=batch"
+  },
+  {
+    "sku": "0950600013527",
+    "batch": "B-DL-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-07",
+    "actor": "Fair Labor Association",
+    "ts": "2026-07-03T08:00:00Z",
+    "note": "claim=ethical_labour; certificate=FLA-2026-4999; scope=batch"
+  },
+  {
+    "sku": "0950600013527",
+    "batch": "B-DL-2026-07",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works",
+    "ts": "2026-07-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013527",
+    "batch": "B-DL-2026-07",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-HAIPHONG",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-07-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013534",
+    "batch": "B-ET-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-BD-04",
+    "actor": "Meridian Outerwear",
+    "ts": "2026-08-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013534",
+    "batch": "B-ET-2026-08",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-BD-04",
+    "actor": "Meridian Outerwear QC Lab",
+    "ts": "2026-08-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013534",
+    "batch": "B-ET-2026-08",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-BD-04",
+    "actor": "Meridian Outerwear",
+    "ts": "2026-08-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013534",
+    "batch": "B-ET-2026-08",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-CHITTAGONG",
+    "actor": "Oceanic Container Co.",
+    "ts": "2026-08-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013541",
+    "batch": "B-WN-2026-06",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works",
+    "ts": "2026-06-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013541",
+    "batch": "B-WN-2026-06",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works QC Lab",
+    "ts": "2026-06-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013541",
+    "batch": "B-WN-2026-06",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-07",
+    "actor": "Control Union (Global Recycled Standard)",
+    "ts": "2026-06-03T07:00:00Z",
+    "note": "claim=recycled_materials; certificate=GRS-2026-4272; scope=batch"
+  },
+  {
+    "sku": "0950600013541",
+    "batch": "B-WN-2026-06",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-VN-07",
+    "actor": "Fair Labor Association",
+    "ts": "2026-06-03T08:00:00Z",
+    "note": "claim=ethical_labour; certificate=FLA-2026-4312; scope=batch"
+  },
+  {
+    "sku": "0950600013541",
+    "batch": "B-WN-2026-06",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-VN-07",
+    "actor": "Highland Pack Works",
+    "ts": "2026-06-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013541",
+    "batch": "B-WN-2026-06",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-HAIPHONG",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-06-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013545",
+    "batch": "B-TM-2026-05",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-AU-01",
+    "actor": "TrailMedic Supplies",
+    "ts": "2026-05-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013545",
+    "batch": "B-TM-2026-05",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-AU-01",
+    "actor": "TrailMedic Supplies QC Lab",
+    "ts": "2026-05-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013545",
+    "batch": "B-TM-2026-05",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Port-MELBOURNE",
+    "actor": "SmartWay Verified Logistics",
+    "ts": "2026-05-03T07:00:00Z",
+    "note": "claim=low_carbon_transport; certificate=SWV-2026-4262; scope=batch"
+  },
+  {
+    "sku": "0950600013545",
+    "batch": "B-TM-2026-05",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-AU-01",
+    "actor": "TrailMedic Supplies",
+    "ts": "2026-05-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013545",
+    "batch": "B-TM-2026-05",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-MELBOURNE",
+    "actor": "Domestic Road Freight",
+    "ts": "2026-05-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013552",
+    "batch": "B-BC-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-CN-11",
+    "actor": "BaseCamp Sleep Systems",
+    "ts": "2026-07-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013552",
+    "batch": "B-BC-2026-07",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-CN-11",
+    "actor": "BaseCamp Sleep Systems QC Lab",
+    "ts": "2026-07-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013552",
+    "batch": "B-BC-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-CN-11",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-07-03T07:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-6260; scope=batch"
+  },
+  {
+    "sku": "0950600013552",
+    "batch": "B-BC-2026-07",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-CN-11",
+    "actor": "Fair Labor Association",
+    "ts": "2026-07-03T08:00:00Z",
+    "note": "claim=ethical_labour; certificate=FLA-2026-6171; scope=batch"
+  },
+  {
+    "sku": "0950600013552",
+    "batch": "B-BC-2026-07",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-CN-11",
+    "actor": "BaseCamp Sleep Systems",
+    "ts": "2026-07-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013552",
+    "batch": "B-BC-2026-07",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-SHENZHEN",
+    "actor": "Oceanic Container Co.",
+    "ts": "2026-07-08T19:00:00Z"
+  },
+  {
+    "sku": "0950600013569",
+    "batch": "B-TB-2026-06",
+    "event_type": "ObjectEvent",
+    "biz_step": "manufacturing",
+    "location": "Factory-CN-21",
+    "actor": "ThermaMug Metalworks",
+    "ts": "2026-06-02T01:00:00Z"
+  },
+  {
+    "sku": "0950600013569",
+    "batch": "B-TB-2026-06",
+    "event_type": "ObjectEvent",
+    "biz_step": "quality_control",
+    "location": "Factory-CN-21",
+    "actor": "ThermaMug Metalworks QC Lab",
+    "ts": "2026-06-03T04:00:00Z"
+  },
+  {
+    "sku": "0950600013569",
+    "batch": "B-TB-2026-06",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Audit-CN-21",
+    "actor": "iFixit Repairability Assessment",
+    "ts": "2026-06-03T07:00:00Z",
+    "note": "claim=repairable; certificate=RPR-2026-4942; scope=batch"
+  },
+  {
+    "sku": "0950600013569",
+    "batch": "B-TB-2026-06",
+    "event_type": "CertificationEvent",
+    "biz_step": "certification",
+    "location": "Port-SHENZHEN",
+    "actor": "SmartWay Verified Logistics",
+    "ts": "2026-06-03T08:00:00Z",
+    "note": "claim=low_carbon_transport; certificate=SWV-2026-8337; scope=batch"
+  },
+  {
+    "sku": "0950600013569",
+    "batch": "B-TB-2026-06",
+    "event_type": "AggregationEvent",
+    "biz_step": "packaging",
+    "location": "Factory-CN-21",
+    "actor": "ThermaMug Metalworks",
+    "ts": "2026-06-04T07:00:00Z"
+  },
+  {
+    "sku": "0950600013569",
+    "batch": "B-TB-2026-06",
+    "event_type": "TransactionEvent",
+    "biz_step": "shipping",
+    "location": "Port-SHENZHEN",
+    "actor": "Pacific Freight Lines",
+    "ts": "2026-06-08T19:00:00Z"
+  }
 ]

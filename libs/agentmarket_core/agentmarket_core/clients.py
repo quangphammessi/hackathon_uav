@@ -22,7 +22,9 @@ import httpx
 
 from agentmarket_core.config import settings
 from agentmarket_core.models import (
+    CartItem,
     CartMandate,
+    ClaimVerification,
     IntentMandate,
     OrderResult,
     PriceQuote,
@@ -100,6 +102,21 @@ class PricingClient(_BaseClient):
     def record_outcome(self, quote_id: str, won: bool) -> None:
         self._request("POST", "/v1/quote/outcome", json={"quote_id": quote_id, "won": won})
 
+    def quote_bundle(self, skus: list[str]) -> dict:
+        return self._request("POST", "/v1/quote/bundle", json={"skus": skus}, retries=2).json()
+
+    def concede(self, sku: str, opening_amount: float, target_amount: float) -> dict:
+        """Ask how far the merchant can move on a price.
+
+        The response carries a price and a reason code and nothing else --
+        cost and MAP are used to compute the answer inside the pricing service
+        and never cross this boundary. That is a property of the API shape, not
+        of the caller's manners.
+        """
+        return self._request("POST", "/v1/quote/concession", json={
+            "sku": sku, "opening_amount": opening_amount, "target_amount": target_amount,
+        }, retries=2).json()
+
 
 class VerificationClient(_BaseClient):
     service = "verification"
@@ -115,6 +132,26 @@ class VerificationClient(_BaseClient):
         return VerificationResult(
             **self._request("POST", "/v1/verify", json={"trust_token_ref": trust_token_ref}, retries=2).json()
         )
+
+    def verify_skus(self, skus: list[str]) -> dict[str, dict]:
+        """Ensure-and-verify a set of SKUs in one round trip.
+
+        Batched because a bundle has to trust-gate every component, and doing
+        that as two sequential calls per item turns a five-item kit into
+        twenty round trips inside one agent request.
+        """
+        body = self._request("POST", "/v1/verify/skus", json={"skus": skus}, retries=2).json()
+        return body.get("results", {})
+
+    def claims_batch(self, skus: list[str], claims: list[str] | None = None
+                     ) -> dict[str, list[ClaimVerification]]:
+        body = self._request("POST", "/v1/claims/batch", json={
+            "skus": skus, "claims": claims or [],
+        }, retries=2).json()
+        return {
+            sku: [ClaimVerification(**c) for c in items]
+            for sku, items in (body.get("results") or {}).items()
+        }
 
 
 class PaymentsClient(_BaseClient):
@@ -134,11 +171,14 @@ class PaymentsClient(_BaseClient):
     def create_cart_mandate(
         self, principal_id: str, intent_mandate: IntentMandate, sku: str,
         quote_id: str, amount: float, trust_token_ref: str,
+        items: list[CartItem] | None = None, bundle_id: str | None = None,
     ) -> CartMandate:
         return CartMandate(**self._request("POST", "/v1/mandates/cart", json={
             "principal_id": principal_id, "intent_mandate": intent_mandate.model_dump(),
             "sku": sku, "quote_id": quote_id, "amount": amount,
             "trust_token_ref": trust_token_ref,
+            "items": [i.model_dump() for i in (items or [])],
+            "bundle_id": bundle_id,
         }).json())
 
     def pay(self, principal_id: str, intent: IntentMandate, cart: CartMandate) -> OrderResult:
@@ -158,3 +198,13 @@ class StorefrontClient(_BaseClient):
 
     def query(self, agent_id: str, query: str) -> dict:
         return self._request("POST", "/v1/query", json={"agent_id": agent_id, "query": query}).json()
+
+    def negotiate(self, agent_id: str, target_amount: float, offer_id: str | None = None,
+                  negotiation_id: str | None = None, sku: str | None = None,
+                  reason: str = "") -> dict:
+        # Not retried. A negotiation round is a state transition, and a
+        # replayed counter-offer would consume a round the buyer did not spend.
+        return self._request("POST", "/v1/negotiate", json={
+            "agent_id": agent_id, "offer_id": offer_id, "negotiation_id": negotiation_id,
+            "sku": sku, "target_amount": target_amount, "reason": reason,
+        }).json()

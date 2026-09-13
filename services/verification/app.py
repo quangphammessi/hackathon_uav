@@ -44,6 +44,17 @@ class RevokeRequest(BaseModel):
     reason: str
 
 
+class SkuListRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    skus: list[str]
+
+
+class ClaimsBatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    skus: list[str]
+    claims: list[str] = []
+
+
 def _startup(bus: EventBus) -> None:
     global token_service, verification_service
     token_service = TrustTokenService(ledger=trust_ledger, bus=bus)
@@ -65,6 +76,51 @@ def ensure_token(req: SkuRequest) -> dict:
 @app.post("/v1/verify", response_model=VerificationResult, tags=["verification"])
 def verify(req: VerifyRequest) -> VerificationResult:
     return verification_service.verify(req.trust_token_ref)
+
+
+@app.post("/v1/verify/skus", tags=["verification"])
+def verify_skus(req: SkuListRequest) -> dict:
+    """Ensure-and-verify a set of SKUs in one call.
+
+    A bundle has to trust-gate every component before any of it is offered,
+    and doing that as two sequential calls per item turns a five-item kit into
+    twenty round trips inside a single agent request. The per-SKU answer is
+    identical to what the individual endpoints return -- this is a transport
+    optimisation, not a weaker check.
+    """
+    results: dict[str, dict] = {}
+    for sku in dict.fromkeys(req.skus):
+        token_id, reason = token_service.ensure_token(sku)
+        if token_id is None:
+            results[sku] = {"trust_token_ref": sku, "status": "FAIL", "confidence": 0.0,
+                            "reason_code": reason or "CHAIN_GAP"}
+            continue
+        results[sku] = verification_service.verify(token_id).model_dump()
+    return {"results": results}
+
+
+@app.post("/v1/claims/batch", tags=["verification"])
+def claims_batch(req: ClaimsBatchRequest) -> dict:
+    """Resolve values claims for several SKUs at once.
+
+    This is the endpoint that makes "only buy from ethical brands" mean
+    something. It answers from certification events in each product's
+    provenance chain, so a merchant's own assertion can never produce a
+    VERIFIED result -- and an asserted claim with nothing behind it comes back
+    as ASSERTED_UNATTESTED rather than being quietly omitted.
+    """
+    return {
+        "results": {
+            sku: [c.model_dump() for c in verification_service.claims_for(sku, req.claims)]
+            for sku in dict.fromkeys(req.skus)
+        }
+    }
+
+
+@app.get("/v1/claims/{sku}", tags=["verification"])
+def claims_for_sku(sku: str) -> dict:
+    return {"sku": sku,
+            "claims": [c.model_dump() for c in verification_service.claims_for(sku)]}
 
 
 @app.post("/v1/trust-tokens/revoke", tags=["verification"])

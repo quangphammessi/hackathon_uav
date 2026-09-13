@@ -28,6 +28,9 @@ install: ## Install Python deps and the shared library for local development
 	pip install -r requirements.txt
 	pip install -e libs/agentmarket_core
 
+dev-infra: ## Start local Postgres + pgvector and Redis without Docker
+	./scripts/dev_infra.sh start
+
 dev: ## Run the five services locally (needs local Postgres + Redis)
 	./scripts/run_local.sh start
 
@@ -52,4 +55,4 @@ ui-dev: ## Run the Next.js UI in development mode
 ui-build: ## Production build of the UI
 	cd ui && npm run build
 
-.PHONY: help up down clean logs ps seed install dev dev-stop dev-seed demo test test-all ui-dev ui-build
+.PHONY: help up down clean logs ps seed install dev-infra dev dev-stop dev-seed demo test test-all ui-dev ui-build

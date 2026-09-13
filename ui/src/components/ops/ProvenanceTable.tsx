@@ -1,7 +1,15 @@
 import type { ProvenanceSkuSummary } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
 
-export function ProvenanceTable({ skus }: { skus: ProvenanceSkuSummary[] }) {
+export function ProvenanceTable({
+  skus,
+  selectedSku,
+  onSelect,
+}: {
+  skus: ProvenanceSkuSummary[];
+  selectedSku?: string | null;
+  onSelect?: (sku: string) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border scrollbar-thin">
       <table className="w-full min-w-[720px] text-left text-xs">
@@ -20,8 +28,11 @@ export function ProvenanceTable({ skus }: { skus: ProvenanceSkuSummary[] }) {
           {skus.map((s) => (
             <tr
               key={s.sku}
+              onClick={onSelect ? () => onSelect(s.sku) : undefined}
               className={`border-b border-border-soft last:border-0 ${
                 !s.ready ? "bg-err/5" : ""
+              } ${onSelect ? "cursor-pointer hover:bg-bg-raised" : ""} ${
+                selectedSku === s.sku ? "bg-accent/5" : ""
               }`}
             >
               <td className="px-3 py-2 font-mono text-text-dim">{s.sku}</td>

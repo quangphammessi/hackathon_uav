@@ -27,8 +27,13 @@ from cryptography.exceptions import InvalidSignature
 
 from agentmarket_core import db
 from agentmarket_core.adapters.bus import EventBus
-from agentmarket_core.config import TOPIC_TRUST_ISSUED, TOPIC_TRUST_REVOKED, settings
-from agentmarket_core.domain import provenance
+from agentmarket_core.config import (
+    TOPIC_CLAIM_UNATTESTED,
+    TOPIC_TRUST_ISSUED,
+    TOPIC_TRUST_REVOKED,
+    settings,
+)
+from agentmarket_core.domain import claims, provenance
 from agentmarket_core.domain.ledger import TrustLedger, trust_ledger
 from agentmarket_core.models import TrustToken
 
@@ -104,11 +109,30 @@ class TrustTokenService:
         if not status["ready"]:
             return None, status["reason_code"] or "CHAIN_GAP"
 
-        product = db.query_one("SELECT gtin FROM products WHERE sku = %s", (sku,))
+        product = db.query_one("SELECT gtin, claims FROM products WHERE sku = %s", (sku,))
         if not product:
             return None, "UNKNOWN_SKU"
 
         gtin = product["gtin"]
+        # Values claims are resolved here, at issuance, so that the set of
+        # attested claims is signed along with everything else and inherits
+        # the credential's properties: it breaks if an event is back-dated and
+        # it dies when the credential is revoked. A claim checked separately,
+        # after the fact, would have neither.
+        claim_results = claims.verify_claims(product["claims"] or [], status["events"])
+        verified_claims = [
+            {"claim": c.claim, "attestedBy": c.attested_by, "certificate": c.certificate,
+             "attestedAt": c.attested_at}
+            for c in claim_results if c.status == "VERIFIED"
+        ]
+        unattested = [c.claim for c in claim_results if c.status == "ASSERTED_UNATTESTED"]
+        if unattested and self.bus:
+            # Surfaced as an event rather than a log line: an asserted claim
+            # with no attestation behind it is a compliance finding the
+            # merchant's own people should see, not a detail of one request.
+            self.bus.publish(TOPIC_CLAIM_UNATTESTED, {
+                "sku": sku, "batch": status["batch"], "claims": unattested,
+            })
         # GS1 Digital Link: the resolvable identifier an agent can dereference
         # to find this credential (proposal §6.2).
         gs1_link = f"https://id.gs1.org/01/{gtin}/10/{status['batch']}"
@@ -121,6 +145,7 @@ class TrustTokenService:
             "batch": status["batch"],
             "provenanceComplete": True,
             "verifiedSteps": status["present_steps"],
+            "verifiedClaims": verified_claims,
         }
         # The signature covers the chain hash, so the credential is bound to
         # the exact provenance events that justified issuing it.

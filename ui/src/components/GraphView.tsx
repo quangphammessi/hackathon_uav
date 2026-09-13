@@ -12,7 +12,13 @@ import {
   type NodeProps,
   MarkerType,
 } from "@xyflow/react";
-import { GRAPH_NODES, GRAPH_EDGES, REPLAY_STEP_MS, type GraphNodeDef } from "@/lib/graph";
+import {
+  GRAPH_NODES,
+  GRAPH_EDGES,
+  NON_GRAPH_SPANS,
+  REPLAY_STEP_MS,
+  type GraphNodeDef,
+} from "@/lib/graph";
 import type { TraceSpan } from "@/lib/api";
 
 type Tone = "dim" | "normal" | "reject" | "success";
@@ -59,6 +65,7 @@ function AmNode({ data }: NodeProps<Node<AmNodeData>>) {
             }
           : undefined
       }
+      title={def.role}
       className={[
         "rounded-lg border px-3 py-2 font-mono text-[11px] leading-tight transition-all duration-300",
         isTerminal ? "min-w-[64px] text-center" : "min-w-[152px]",
@@ -76,6 +83,11 @@ function AmNode({ data }: NodeProps<Node<AmNodeData>>) {
           </span>
         )}
       </div>
+      {def.service && !isTerminal && (
+        <div className="mt-0.5 text-[9px] uppercase tracking-wide text-text-faint">
+          {def.service}
+        </div>
+      )}
       {executed && totalDurationMs !== null && !isTerminal && (
         <div className="mt-0.5 text-[10px] text-text-dim">
           {totalDurationMs.toFixed(2)} ms
@@ -97,22 +109,31 @@ export function GraphView({ spans, onSelectNode }: GraphViewProps) {
   const [revealedCount, setRevealedCount] = useState(0);
   const [endLit, setEndLit] = useState(false);
 
+  // A trace can carry spans that share its trace id but are not nodes of the
+  // query graph (e.g. a `negotiate` round, traced after the graph already
+  // returned). Filter those out up front so they never break node matching
+  // or the replay timeline.
+  const graphSpans = useMemo(
+    () => (spans ?? []).filter((s) => !NON_GRAPH_SPANS.has(s.name)),
+    [spans],
+  );
+
   useEffect(() => {
     setRevealedCount(0);
     setEndLit(false);
-    if (!spans || spans.length === 0) return;
+    if (graphSpans.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let k = 1; k <= spans.length; k++) {
+    for (let k = 1; k <= graphSpans.length; k++) {
       timers.push(setTimeout(() => setRevealedCount(k), k * REPLAY_STEP_MS));
     }
     timers.push(
-      setTimeout(() => setEndLit(true), (spans.length + 1) * REPLAY_STEP_MS),
+      setTimeout(() => setEndLit(true), (graphSpans.length + 1) * REPLAY_STEP_MS),
     );
     return () => timers.forEach(clearTimeout);
-  }, [spans]);
+  }, [graphSpans]);
 
   const { nodes, edges } = useMemo(() => {
-    const revealed = spans?.slice(0, revealedCount) ?? [];
+    const revealed = graphSpans.slice(0, revealedCount);
     const occurrencesByNode: Record<string, TraceSpan[]> = {};
     for (const s of revealed) {
       (occurrencesByNode[s.name] ??= []).push(s);
@@ -134,9 +155,9 @@ export function GraphView({ spans, onSelectNode }: GraphViewProps) {
     let latestNodeId: string | null =
       revealed.length > 0 ? revealed[revealed.length - 1].name : null;
 
-    if (spans && revealed.length === spans.length && revealed.length > 0) {
+    if (revealed.length === graphSpans.length && revealed.length > 0) {
       const last = revealed[revealed.length - 1].name;
-      if (last === "response_composer") {
+      if (last === "compose") {
         endTone = "success";
         if (endLit) {
           traversed.add("e-compose-end");
@@ -161,7 +182,7 @@ export function GraphView({ spans, onSelectNode }: GraphViewProps) {
         executed = endLit;
         tone = executed ? (endTone === "reject" ? "reject" : "success") : "dim";
       } else if (executed) {
-        tone = def.id === "reject" ? "reject" : def.id === "response_composer" ? "success" : "normal";
+        tone = def.id === "reject" ? "reject" : def.id === "compose" ? "success" : "normal";
       }
       const totalDurationMs = occurrences.length
         ? occurrences.reduce((sum, s) => sum + s.duration_ms, 0)
@@ -213,28 +234,46 @@ export function GraphView({ spans, onSelectNode }: GraphViewProps) {
     });
 
     return { nodes: rfNodes, edges: rfEdges };
-  }, [spans, revealedCount, endLit, onSelectNode]);
+  }, [graphSpans, revealedCount, endLit, onSelectNode]);
 
   return (
-    <div className="h-[440px] w-full overflow-hidden rounded-lg border border-border bg-bg-panel">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.15 }}
-        proOptions={{ hideAttribution: true }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-        panOnScroll
-        zoomOnDoubleClick={false}
-        minZoom={0.4}
-        maxZoom={1.5}
-      >
-        <Background color="var(--border-soft)" gap={24} size={1} />
-        <Controls showInteractive={false} />
-      </ReactFlow>
+    <div className="space-y-2">
+      <div className="h-[440px] w-full overflow-hidden rounded-lg border border-border bg-bg-panel">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.15 }}
+          proOptions={{ hideAttribution: true }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+          panOnScroll
+          zoomOnDoubleClick={false}
+          minZoom={0.4}
+          maxZoom={1.5}
+        >
+          <Background color="var(--border-soft)" gap={24} size={1} />
+          <Controls showInteractive={false} />
+        </ReactFlow>
+      </div>
+      <details className="rounded-lg border border-border-soft bg-bg-panel px-3 py-2 text-xs">
+        <summary className="cursor-pointer select-none text-text-faint hover:text-text">
+          node reference (role &middot; service)
+        </summary>
+        <ul className="mt-2 space-y-1.5 font-mono text-[11px]">
+          {GRAPH_NODES.filter((n) => n.kind !== "terminal").map((n) => (
+            <li key={n.id} className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-semibold text-text">{n.label}</span>
+              {n.service && (
+                <span className="text-text-faint">[{n.service}]</span>
+              )}
+              <span className="font-sans text-text-dim">{n.role}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
     </div>
   );
 }

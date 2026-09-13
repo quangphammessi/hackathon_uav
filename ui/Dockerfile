@@ -11,6 +11,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p public
 # Baked in at build time; override at runtime via `docker run -e` if the
 # gateway's URL differs (client bundles read this at build time, so a
 # rebuild is required for the change to take effect in the browser).

@@ -109,6 +109,28 @@ export function MandateFlow({
                   <dd className="truncate text-text">{cartMandate.signature}</dd>
                 </div>
               </dl>
+              {cartMandate.items.length > 0 && (
+                <div className="mt-2">
+                  <div className="text-[11px] text-text-faint">
+                    line items ({cartMandate.items.length}) -- each re-validated at
+                    settlement
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {cartMandate.items.map((it) => (
+                      <li
+                        key={it.sku}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-soft bg-bg px-2 py-1 font-mono text-[11px] text-text-dim"
+                      >
+                        <span>{it.sku}</span>
+                        <span className="truncate text-text-faint">{it.quote_id}</span>
+                        <span className="text-text">
+                          {cartMandate.currency} {it.amount.toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </>
           ) : (
             <p className="mt-1 text-xs text-text-faint">
