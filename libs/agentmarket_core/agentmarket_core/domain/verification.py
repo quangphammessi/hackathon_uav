@@ -14,10 +14,12 @@ from __future__ import annotations
 import json
 import logging
 
+from agentmarket_core import db
 from agentmarket_core.config import settings
+from agentmarket_core.domain import claims as claims_mod
 from agentmarket_core.domain import provenance
 from agentmarket_core.domain.trust_tokens import TrustTokenService
-from agentmarket_core.models import VerificationResult
+from agentmarket_core.models import ClaimVerification, VerificationResult
 
 log = logging.getLogger("agentmarket.verification")
 
@@ -30,6 +32,21 @@ REASON_CHAIN_HASH_MISMATCH = "CHAIN_HASH_MISMATCH"
 class VerificationService:
     def __init__(self, token_service: TrustTokenService) -> None:
         self.tokens = token_service
+
+    def claims_for(self, sku: str, requested: list[str] | None = None) -> list[ClaimVerification]:
+        """Answer a values question about a SKU with evidence.
+
+        Reads the product's asserted claims and reconciles them against the
+        certification events in its provenance chain. The merchant's assertion
+        alone never produces a VERIFIED result -- that is the entire point of
+        putting this behind the verification service rather than reading a
+        boolean column in the storefront.
+        """
+        row = db.query_one("SELECT claims, batch FROM products WHERE sku = %s", (sku,))
+        if not row:
+            return []
+        status = provenance.chain_status(sku, row.get("batch"))
+        return claims_mod.verify_claims(row["claims"] or [], status["events"], requested)
 
     def verify(self, trust_token_ref: str) -> VerificationResult:
         record = self.tokens.get(trust_token_ref)

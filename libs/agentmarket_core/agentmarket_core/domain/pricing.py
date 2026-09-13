@@ -27,11 +27,18 @@ from agentmarket_core import db
 from agentmarket_core.adapters.bus import EventBus
 from agentmarket_core.adapters.featurestore import FeatureStore
 from agentmarket_core.config import (
+    TOPIC_NEGOTIATION_ROUND,
     TOPIC_QUOTE_ISSUED,
     TOPIC_TRANSACTION_OUTCOME,
     settings,
 )
 from agentmarket_core.domain.bandit import PersistentBandit
+from agentmarket_core.domain.bundling import price_bundle
+from agentmarket_core.domain.negotiation import (
+    ConcessionDecision,
+    evaluate_concession,
+    item_floor,
+)
 from agentmarket_core.models import PriceQuote
 
 log = logging.getLogger("agentmarket.pricing")
@@ -121,6 +128,64 @@ class PricingEngine:
                 "spread": spread, "fair_value": quote.fair_value, "guardrails": guardrails,
             })
         return quote
+
+    # -- negotiation (challenge brief: dynamic B2A negotiation) -------------
+    def floor_for(self, sku: str) -> float:
+        """The lowest price this SKU may ever be sold at, bundled or not."""
+        f = self.store.get_online(sku)
+        if f.get("internal_cost") is None:
+            raise KeyError(f"no internal features for sku={sku!r}")
+        return item_floor(f["internal_cost"], f.get("map_price"))
+
+    def concede(self, sku: str, opening_amount: float, target_amount: float
+                ) -> tuple[ConcessionDecision, PriceQuote | None]:
+        """Answer a buyer agent's counter-offer on one SKU.
+
+        Returns the decision plus, when the merchant moved, a *new* quote at
+        the conceded price. Issuing a real quote rather than returning a
+        number matters: settlement re-validates the quote id, so a negotiated
+        price has to exist in the quote book or the payment will be refused
+        for an amount mismatch. A negotiation that cannot be paid for is not a
+        negotiation.
+        """
+        floor = self.floor_for(sku)
+        fair_value, _ = self._fair_value(sku)
+        decision = evaluate_concession(opening_amount, target_amount, floor, fair_value)
+
+        quote: PriceQuote | None = None
+        if decision.outcome in {"CONCEDED", "PARTIAL_CONCESSION"} and decision.amount < opening_amount:
+            guardrails = ["NEGOTIATED_CONCESSION"]
+            if abs(decision.amount - floor) < 0.01:
+                guardrails.append("MAP_FLOOR" if decision.amount >= (self.store.get_online(sku).get("map_price") or 0)
+                                  else "MARGIN_FLOOR")
+            quote = PriceQuote(
+                sku=sku, amount=round(decision.amount, 2),
+                spread=round((decision.amount / fair_value) - 1, 4) if fair_value else 0.0,
+                fair_value=round(fair_value, 2),
+                valid_until=time.time() + settings.quote_ttl_seconds,
+                guardrails_applied=guardrails,
+            )
+            self._store_quote(quote)
+
+        if self.bus:
+            self.bus.publish(TOPIC_NEGOTIATION_ROUND, {
+                "sku": sku, "outcome": decision.outcome, "reason_code": decision.reason_code,
+                "asked": round(target_amount, 2), "offered": round(decision.amount, 2),
+                "quote_id": quote.quote_id if quote else None,
+            })
+        return decision, quote
+
+    def quote_bundle(self, skus: list[str]) -> dict:
+        """Price a kit as a unit. Runs here, not in the storefront, because the
+        floors it has to respect are computed from cost and MAP."""
+        quotes, subtotal, discount, total, guardrails = price_bundle(
+            skus, quote_fn=self.quote, floor_fn=self.floor_for,
+        )
+        return {
+            "quotes": [q.model_dump() for q in quotes],
+            "subtotal": subtotal, "bundle_discount": discount, "total": total,
+            "guardrails_applied": guardrails,
+        }
 
     # -- quote book ---------------------------------------------------------
     def _store_quote(self, quote: PriceQuote) -> None:

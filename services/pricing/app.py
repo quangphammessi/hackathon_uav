@@ -58,6 +58,18 @@ class CompetitorPriceRequest(BaseModel):
     price: float
 
 
+class BundleQuoteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    skus: list[str]
+
+
+class ConcessionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    sku: str
+    opening_amount: float
+    target_amount: float
+
+
 def _on_competitor_signal(envelope: dict) -> None:
     """Ingest a competitor observation published by anything upstream --
     a scraper, a partner feed, a manual correction."""
@@ -103,6 +115,39 @@ def validate_quote(req: ValidateRequest) -> dict:
 def record_outcome(req: OutcomeRequest) -> dict:
     engine.record_outcome(req.quote_id, req.won)
     return {"recorded": True}
+
+
+@app.post("/v1/quote/bundle", tags=["pricing"])
+def quote_bundle(req: BundleQuoteRequest) -> dict:
+    """Price a kit as a unit.
+
+    Lives here rather than in the storefront because the discount is bounded
+    by each component's own floor, and those floors are computed from cost and
+    MAP. The storefront chooses what goes in the kit; it is structurally
+    unable to decide what the kit may cost.
+    """
+    if not req.skus:
+        raise HTTPException(status_code=400, detail="skus must not be empty")
+    try:
+        return engine.quote_bundle(req.skus)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/v1/quote/concession", tags=["pricing"])
+def quote_concession(req: ConcessionRequest) -> dict:
+    """Answer a buyer agent's counter-offer on one SKU.
+
+    The response carries a price, an outcome and a reason code. It never
+    carries cost, MAP or margin: `FLOOR_REACHED` is the whole explanation a
+    counterparty is entitled to, and it is enough for the buyer's agent to
+    stop pushing and decide.
+    """
+    try:
+        decision, quote = engine.concede(req.sku, req.opening_amount, req.target_amount)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {**decision.to_dict(), "quote": quote.model_dump() if quote else None}
 
 
 @app.get("/v1/quote/{quote_id}", response_model=PriceQuote, tags=["pricing"])

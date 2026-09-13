@@ -4,17 +4,43 @@
     "gtin": "0950600013435",
     "name": "TrailPro Waterproof Hiking Boot",
     "category": "footwear",
-    "description": "A lightweight waterproof hiking boot with an IPX6-rated membrane, Vibram outsole, and a reinforced toe cap. Built for multi-day trail use in wet conditions.",
+    "description": "A lightweight waterproof hiking boot with an IPX6-rated membrane, Vibram outsole, and a reinforced toe cap. Built for multi-day trail use in wet conditions by hikers who already have some trail mileage.",
     "attributes": {
+      "product_type": "boot",
       "weight_g": 480,
       "waterproof_rating": "IPX6",
       "material": "ripstop nylon + suede leather",
-      "sizes": ["US7", "US8", "US9", "US10", "US11"],
-      "certifications": ["ISO 20344"]
+      "sizes": [
+        "US7",
+        "US8",
+        "US9",
+        "US10",
+        "US11"
+      ],
+      "experience_level": "intermediate",
+      "ease_of_use": "moderate",
+      "break_in_required": true,
+      "use_cases": [
+        "multi_day_trek",
+        "wet_weather",
+        "day_hike"
+      ],
+      "certifications": [
+        "ISO 20344"
+      ]
     },
-    "internal_cost": 62.00,
-    "map_price": 119.00,
-    "list_price": 179.00,
+    "claims": [
+      "ethical_labour",
+      "repairable"
+    ],
+    "complements": [
+      "0950600013497",
+      "0950600013545"
+    ],
+    "role": "core",
+    "internal_cost": 62.0,
+    "map_price": 119.0,
+    "list_price": 179.0,
     "currency": "AUD",
     "batch": "B-TP-2026-08",
     "inventory_units": 340
@@ -24,17 +50,33 @@
     "gtin": "0950600013442",
     "name": "AlpineDry 45L Trekking Backpack",
     "category": "bags",
-    "description": "A 45-litre expedition backpack with an adjustable torso harness, hydration-bladder compatibility, and a rain cover for wet-weather trekking.",
+    "description": "A 45-litre expedition backpack with an adjustable torso harness, hydration-bladder compatibility, and a rain cover for wet-weather trekking. Sized for multi-night loads.",
     "attributes": {
+      "product_type": "backpack",
       "weight_g": 1650,
       "capacity_l": 45,
       "material": "420D nylon",
       "waterproof_rating": "IPX4",
+      "experience_level": "intermediate",
+      "ease_of_use": "moderate",
+      "use_cases": [
+        "multi_day_trek",
+        "camping",
+        "wet_weather"
+      ],
       "certifications": []
     },
-    "internal_cost": 74.00,
-    "map_price": 139.00,
-    "list_price": 199.00,
+    "claims": [
+      "repairable"
+    ],
+    "complements": [
+      "0950600013503",
+      "0950600013545"
+    ],
+    "role": "core",
+    "internal_cost": 74.0,
+    "map_price": 139.0,
+    "list_price": 199.0,
     "currency": "AUD",
     "batch": "B-AD-2026-07",
     "inventory_units": 190
@@ -46,15 +88,38 @@
     "category": "apparel",
     "description": "A fully seam-taped 3-layer hardshell jacket, IPX8 waterproof rating, pit-zip ventilation, for alpine and wet-climate hiking.",
     "attributes": {
+      "product_type": "rain_jacket",
       "weight_g": 340,
       "waterproof_rating": "IPX8",
       "material": "3-layer ripstop laminate",
-      "sizes": ["S", "M", "L", "XL"],
-      "certifications": ["bluesign approved"]
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "experience_level": "intermediate",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "wet_weather",
+        "alpine",
+        "multi_day_trek"
+      ],
+      "certifications": [
+        "bluesign approved"
+      ]
     },
-    "internal_cost": 88.00,
-    "map_price": 169.00,
-    "list_price": 249.00,
+    "claims": [
+      "recycled_materials",
+      "pfc_free"
+    ],
+    "complements": [
+      "0950600013435"
+    ],
+    "role": "core",
+    "internal_cost": 88.0,
+    "map_price": 169.0,
+    "list_price": 249.0,
     "currency": "AUD",
     "batch": "B-SS-2026-08",
     "inventory_units": 210
@@ -64,16 +129,33 @@
     "gtin": "0950600013466",
     "name": "PureFlow Portable Water Filter",
     "category": "gear",
-    "description": "A 0.1-micron hollow-fibre water filter, removes 99.9999% of bacteria and 99.9% of protozoa, filters up to 1500L before replacement.",
+    "description": "A 0.1-micron hollow-fibre water filter, removes 99.9999% of bacteria and 99.9% of protozoa, filters up to 1500L before replacement. No pumping, no chemicals, squeeze and drink.",
     "attributes": {
+      "product_type": "water_filter",
       "weight_g": 65,
       "filter_micron": 0.1,
       "flow_rate_lpm": 1.7,
-      "certifications": ["NSF P231"]
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "day_hike",
+        "multi_day_trek",
+        "camping"
+      ],
+      "certifications": [
+        "NSF P231"
+      ]
     },
-    "internal_cost": 14.50,
-    "map_price": 34.90,
-    "list_price": 49.90,
+    "claims": [
+      "repairable"
+    ],
+    "complements": [
+      "0950600013503"
+    ],
+    "role": "accessory",
+    "internal_cost": 14.5,
+    "map_price": 34.9,
+    "list_price": 49.9,
     "currency": "AUD",
     "batch": "B-PF-2026-06",
     "inventory_units": 610
@@ -83,37 +165,70 @@
     "gtin": "0950600013473",
     "name": "NovaBeam 800lm Rechargeable Headlamp",
     "category": "electronics",
-    "description": "An 800-lumen USB-C rechargeable headlamp with IPX7 water resistance, red night-vision mode, and a 40-hour low-power runtime.",
+    "description": "An 800-lumen USB-C rechargeable headlamp with IPX7 water resistance, red night-vision mode, and a 40-hour low-power runtime. One button, no menus.",
     "attributes": {
+      "product_type": "headlamp",
       "weight_g": 92,
       "lumens": 800,
       "waterproof_rating": "IPX7",
       "battery_mah": 3200,
-      "certifications": ["CE", "RoHS"]
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "camping",
+        "multi_day_trek",
+        "day_hike"
+      ],
+      "certifications": [
+        "CE"
+      ]
     },
-    "internal_cost": 19.00,
-    "map_price": 44.90,
-    "list_price": 64.90,
+    "claims": [
+      "repairable",
+      "low_carbon_transport"
+    ],
+    "complements": [],
+    "role": "accessory",
+    "internal_cost": 21.0,
+    "map_price": 44.9,
+    "list_price": 69.9,
     "currency": "AUD",
-    "batch": "B-NB-2026-08",
-    "inventory_units": 275
+    "batch": "B-NB-2026-07",
+    "inventory_units": 380
   },
   {
     "sku": "0950600013480",
     "gtin": "0950600013480",
     "name": "GlacierDown -12C Sleeping Bag",
     "category": "gear",
-    "description": "A 700-fill-power down sleeping bag rated to -12C, water-resistant DWR shell, packs to 8 litres.",
+    "description": "A 700-fill-power down sleeping bag rated to -12C, water-resistant DWR shell, packs to 8 litres. Built for alpine and shoulder-season cold.",
     "attributes": {
+      "product_type": "sleeping_bag",
       "weight_g": 1180,
       "temp_rating_c": -12,
       "fill_power": 700,
       "pack_size_l": 8,
-      "certifications": ["RDS certified down"]
+      "experience_level": "expert",
+      "ease_of_use": "moderate",
+      "use_cases": [
+        "alpine",
+        "multi_day_trek",
+        "cold_weather"
+      ],
+      "certifications": [
+        "RDS certified down"
+      ]
     },
-    "internal_cost": 121.00,
-    "map_price": 219.00,
-    "list_price": 299.00,
+    "claims": [
+      "animal_welfare"
+    ],
+    "complements": [
+      "0950600013552"
+    ],
+    "role": "core",
+    "internal_cost": 121.0,
+    "map_price": 219.0,
+    "list_price": 299.0,
     "currency": "AUD",
     "batch": "B-GD-2026-05",
     "inventory_units": 95
@@ -123,16 +238,33 @@
     "gtin": "0950600013497",
     "name": "TrekLite Carbon Trekking Poles (Pair)",
     "category": "gear",
-    "description": "A pair of carbon-fibre trekking poles, 190g each, with cork grips and quick-flip locks.",
+    "description": "A pair of carbon-fibre trekking poles, 190g each, with cork grips and quick-flip locks. Takes load off the knees on descents, which is what most new hikers feel first.",
     "attributes": {
+      "product_type": "trekking_poles",
       "weight_g": 380,
       "material": "carbon fibre",
-      "adjustable_range_cm": [110, 135],
+      "adjustable_range_cm": [
+        110,
+        135
+      ],
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "joint_support": true,
+      "use_cases": [
+        "day_hike",
+        "multi_day_trek",
+        "knee_support"
+      ],
       "certifications": []
     },
-    "internal_cost": 26.00,
-    "map_price": 54.90,
-    "list_price": 79.90,
+    "claims": [
+      "repairable"
+    ],
+    "complements": [],
+    "role": "accessory",
+    "internal_cost": 26.0,
+    "map_price": 54.9,
+    "list_price": 79.9,
     "currency": "AUD",
     "batch": "B-TL-2026-08",
     "inventory_units": 430
@@ -144,16 +276,297 @@
     "category": "gear",
     "description": "A 3-litre BPA-free hydration bladder with a quick-release bite valve and wide-mouth fill opening for easy cleaning.",
     "attributes": {
+      "product_type": "hydration_bladder",
       "weight_g": 145,
       "capacity_l": 3,
       "material": "TPU, BPA-free",
-      "certifications": ["FDA food-contact safe"]
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "day_hike",
+        "multi_day_trek"
+      ],
+      "certifications": [
+        "FDA food-contact safe"
+      ]
     },
-    "internal_cost": 9.20,
-    "map_price": 24.90,
-    "list_price": 34.90,
+    "claims": [],
+    "complements": [],
+    "role": "accessory",
+    "internal_cost": 9.2,
+    "map_price": 24.9,
+    "list_price": 34.9,
     "currency": "AUD",
     "batch": "B-CR-2026-04",
     "inventory_units": 520
+  },
+  {
+    "sku": "0950600013510",
+    "gtin": "0950600013510",
+    "name": "StepEasy Trail Shoe",
+    "category": "footwear",
+    "description": "A soft-collar, no-break-in trail shoe with a wide toe box, a cushioned midsole and a grippy but forgiving outsole. Designed for first-time hikers and older walkers who want comfort on day trails rather than technical terrain.",
+    "attributes": {
+      "product_type": "trail_shoe",
+      "weight_g": 310,
+      "waterproof_rating": "IPX4",
+      "material": "recycled mesh + TPU overlays",
+      "sizes": [
+        "US7",
+        "US8",
+        "US9",
+        "US10",
+        "US11",
+        "US12"
+      ],
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "break_in_required": false,
+      "wide_fit": true,
+      "use_cases": [
+        "day_hike",
+        "first_hike",
+        "camping",
+        "joint_comfort"
+      ],
+      "certifications": [
+        "ISO 20344"
+      ]
+    },
+    "claims": [
+      "ethical_labour",
+      "recycled_materials",
+      "repairable"
+    ],
+    "complements": [
+      "0950600013497",
+      "0950600013545"
+    ],
+    "role": "core",
+    "internal_cost": 44.0,
+    "map_price": 89.0,
+    "list_price": 129.0,
+    "currency": "AUD",
+    "batch": "B-SE-2026-08",
+    "inventory_units": 260
+  },
+  {
+    "sku": "0950600013527",
+    "gtin": "0950600013527",
+    "name": "DayLite 22L Daypack",
+    "category": "bags",
+    "description": "A 22-litre daypack with a padded back panel, a simple two-strap harness and no adjustment fiddle. Enough for a full day out with lunch, layers and water.",
+    "attributes": {
+      "product_type": "daypack",
+      "weight_g": 620,
+      "capacity_l": 22,
+      "material": "recycled 300D polyester",
+      "waterproof_rating": "IPX3",
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "day_hike",
+        "first_hike",
+        "camping"
+      ],
+      "certifications": []
+    },
+    "claims": [
+      "recycled_materials",
+      "ethical_labour"
+    ],
+    "complements": [
+      "0950600013503",
+      "0950600013466",
+      "0950600013545"
+    ],
+    "role": "core",
+    "internal_cost": 29.0,
+    "map_price": 59.0,
+    "list_price": 89.0,
+    "currency": "AUD",
+    "batch": "B-DL-2026-07",
+    "inventory_units": 410
+  },
+  {
+    "sku": "0950600013534",
+    "gtin": "0950600013534",
+    "name": "EcoTrail Recycled Rain Shell",
+    "category": "apparel",
+    "description": "A 2.5-layer rain shell marketed as made from recycled fabric with low-carbon shipping. Packs into its own chest pocket.",
+    "attributes": {
+      "product_type": "rain_jacket",
+      "weight_g": 290,
+      "waterproof_rating": "IPX6",
+      "material": "2.5-layer recycled polyester",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "day_hike",
+        "wet_weather",
+        "first_hike"
+      ],
+      "certifications": []
+    },
+    "claims": [
+      "recycled_materials",
+      "low_carbon_transport"
+    ],
+    "complements": [],
+    "role": "core",
+    "internal_cost": 46.0,
+    "map_price": 99.0,
+    "list_price": 139.0,
+    "currency": "AUD",
+    "batch": "B-ET-2026-08",
+    "inventory_units": 175
+  },
+  {
+    "sku": "0950600013541",
+    "gtin": "0950600013541",
+    "name": "WarmNest +5C Synthetic Sleeping Bag",
+    "category": "gear",
+    "description": "A +5C-rated synthetic sleeping bag with a draft collar and a full-length zip, forgiving of damp and easy to wash. A sensible first bag for summer and shoulder-season campsites, and warmer than its rating for cold sleepers.",
+    "attributes": {
+      "product_type": "sleeping_bag",
+      "weight_g": 1320,
+      "temp_rating_c": 5,
+      "comfort_rating_c": 8,
+      "fill_type": "synthetic",
+      "pack_size_l": 12,
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "machine_washable": true,
+      "use_cases": [
+        "camping",
+        "first_hike",
+        "day_hike"
+      ],
+      "certifications": []
+    },
+    "claims": [
+      "recycled_materials",
+      "ethical_labour"
+    ],
+    "complements": [
+      "0950600013473",
+      "0950600013552"
+    ],
+    "role": "core",
+    "internal_cost": 52.0,
+    "map_price": 99.0,
+    "list_price": 149.0,
+    "currency": "AUD",
+    "batch": "B-WN-2026-06",
+    "inventory_units": 230
+  },
+  {
+    "sku": "0950600013545",
+    "gtin": "0950600013545",
+    "name": "TrailMedic Compact First-Aid Kit",
+    "category": "gear",
+    "description": "A 42-piece compact first-aid kit with blister dressings, a pressure bandage and a foil blanket, in a water-resistant zip pouch.",
+    "attributes": {
+      "product_type": "first_aid_kit",
+      "weight_g": 210,
+      "pieces": 42,
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "day_hike",
+        "multi_day_trek",
+        "camping",
+        "first_hike"
+      ],
+      "certifications": [
+        "TGA listed"
+      ]
+    },
+    "claims": [
+      "low_carbon_transport"
+    ],
+    "complements": [],
+    "role": "accessory",
+    "internal_cost": 11.0,
+    "map_price": 24.9,
+    "list_price": 34.9,
+    "currency": "AUD",
+    "batch": "B-TM-2026-05",
+    "inventory_units": 540
+  },
+  {
+    "sku": "0950600013552",
+    "gtin": "0950600013552",
+    "name": "BaseCamp R4 Insulated Sleeping Mat",
+    "category": "gear",
+    "description": "An R-4.2 insulated inflatable sleeping mat, 7cm thick, with a twist valve that inflates in about fifteen breaths. Most of the cold a camper feels at night comes up from the ground, not the air.",
+    "attributes": {
+      "product_type": "sleeping_mat",
+      "weight_g": 640,
+      "r_value": 4.2,
+      "thickness_cm": 7,
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "camping",
+        "cold_weather",
+        "first_hike"
+      ],
+      "certifications": []
+    },
+    "claims": [
+      "repairable",
+      "ethical_labour"
+    ],
+    "complements": [],
+    "role": "accessory",
+    "internal_cost": 38.0,
+    "map_price": 74.9,
+    "list_price": 109.0,
+    "currency": "AUD",
+    "batch": "B-BC-2026-07",
+    "inventory_units": 195
+  },
+  {
+    "sku": "0950600013569",
+    "gtin": "0950600013569",
+    "name": "ThermaMug 750ml Insulated Bottle",
+    "category": "gear",
+    "description": "A 750ml vacuum-insulated stainless bottle that holds heat for twelve hours, with a leak-proof lid and a powder-coated grip.",
+    "attributes": {
+      "product_type": "insulated_bottle",
+      "weight_g": 395,
+      "capacity_ml": 750,
+      "insulated_hours": 12,
+      "experience_level": "beginner",
+      "ease_of_use": "simple",
+      "use_cases": [
+        "day_hike",
+        "camping",
+        "cold_weather",
+        "first_hike"
+      ],
+      "certifications": [
+        "LFGB food-contact safe"
+      ]
+    },
+    "claims": [
+      "repairable",
+      "low_carbon_transport"
+    ],
+    "complements": [],
+    "role": "accessory",
+    "internal_cost": 12.5,
+    "map_price": 29.9,
+    "list_price": 44.9,
+    "currency": "AUD",
+    "batch": "B-TB-2026-06",
+    "inventory_units": 480
   }
 ]

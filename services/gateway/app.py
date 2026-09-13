@@ -41,7 +41,7 @@ from agentmarket_core.clients import (
     VerificationClient,
 )
 from agentmarket_core.config import ALL_TOPICS, settings
-from agentmarket_core.models import CartMandate, IntentMandate, OrderResult
+from agentmarket_core.models import CartItem, CartMandate, IntentMandate, OrderResult
 from agentmarket_core.service import create_app
 from agentmarket_core.tracing import Tracer
 
@@ -70,6 +70,20 @@ class QueryRequest(BaseModel):
     query: str
 
 
+class RevokeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token_id: str
+    reason: str
+
+
+class NegotiateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    negotiation_id: str
+    target_amount: float
+    sku: str | None = None
+    reason: str = ""
+
+
 class IntentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     principal_id: str
@@ -86,6 +100,10 @@ class PayRequest(BaseModel):
     quote_id: str
     amount: float
     trust_token_ref: str
+    # Present when buying a kit: one signed cart, several quoted lines, each
+    # re-validated at settlement.
+    items: list[CartItem] = []
+    bundle_id: str | None = None
 
 
 def _fan_out(envelope: dict) -> None:
@@ -162,10 +180,39 @@ def query(req: QueryRequest, agent: dict = Depends(current_agent)) -> dict:
         raise HTTPException(status_code=503, detail=f"storefront unavailable: {exc.detail}") from exc
 
 
+@app.post("/v1/negotiate", tags=["agent"])
+def negotiate(req: NegotiateRequest, agent: dict = Depends(current_agent)) -> dict:
+    """Counter-offer endpoint for the buyer's agent.
+
+    Authenticated like the query path: a negotiation is a commercial
+    conversation, and an unauthenticated counterparty could otherwise walk a
+    merchant's floor prices by countering repeatedly with different numbers.
+    """
+    try:
+        return storefront.negotiate(
+            agent_id=agent["sub"], target_amount=req.target_amount,
+            negotiation_id=req.negotiation_id, sku=req.sku, reason=req.reason,
+        )
+    except ServiceError as exc:
+        status = exc.status_code if exc.status_code in {400, 404} else 503
+        raise HTTPException(status_code=status, detail=exc.detail) from exc
+
+
 @app.get("/v1/catalog", tags=["agent"])
 def catalog() -> dict:
     try:
         return storefront._request("GET", "/v1/catalog").json()  # noqa: SLF001
+    except ServiceError as exc:
+        raise HTTPException(status_code=503, detail=exc.detail) from exc
+
+
+@app.get("/v1/claims/{sku}", tags=["agent"])
+def claims(sku: str) -> dict:
+    """What this product claims, and which of those claims are actually
+    attested in its provenance chain. Open to any agent: a values claim that
+    cannot be checked before buying is not worth much."""
+    try:
+        return verification._request("GET", f"/v1/claims/{sku}").json()  # noqa: SLF001
     except ServiceError as exc:
         raise HTTPException(status_code=503, detail=exc.detail) from exc
 
@@ -194,7 +241,7 @@ def pay(req: PayRequest, agent: dict = Depends(current_agent)) -> OrderResult:
         cart = payments.create_cart_mandate(
             principal_id=req.principal_id, intent_mandate=req.intent_mandate,
             sku=req.sku, quote_id=req.quote_id, amount=req.amount,
-            trust_token_ref=req.trust_token_ref,
+            trust_token_ref=req.trust_token_ref, items=req.items, bundle_id=req.bundle_id,
         )
         return payments.pay(req.principal_id, req.intent_mandate, cart)
     except ServiceError as exc:
@@ -275,6 +322,8 @@ def ops_overview() -> dict:
         "provenance": safe(lambda: verification._request("GET", "/v1/provenance").json(), {"skus": []}),  # noqa: SLF001
         "ledger": safe(lambda: verification._request("GET", "/v1/ledger/integrity").json(), {}),  # noqa: SLF001
         "orders": safe(lambda: payments._request("GET", "/v1/orders?limit=10").json(), {"orders": []}),  # noqa: SLF001
+        "negotiations": safe(lambda: storefront._request("GET", "/v1/negotiations?limit=10").json(),  # noqa: SLF001
+                             {"negotiations": []}),
         "traces": safe(lambda: {"traces": Tracer.recent_traces(limit=10)}, {"traces": []}),
         "services": {
             "storefront": storefront.health(), "pricing": pricing.health(),
@@ -299,9 +348,44 @@ def ops_provenance(sku: str) -> dict:
         raise HTTPException(status_code=exc.status_code or 503, detail=exc.detail) from exc
 
 
+@app.get("/v1/ops/negotiations", tags=["ops"])
+def ops_negotiations(limit: int = 25) -> dict:
+    try:
+        return storefront._request("GET", f"/v1/negotiations?limit={limit}").json()  # noqa: SLF001
+    except ServiceError as exc:
+        raise HTTPException(status_code=503, detail=exc.detail) from exc
+
+
 @app.get("/v1/ops/ledger", tags=["ops"])
 def ops_ledger(limit: int = 50) -> dict:
     try:
         return verification._request("GET", f"/v1/ledger?limit={limit}").json()  # noqa: SLF001
     except ServiceError as exc:
         raise HTTPException(status_code=503, detail=exc.detail) from exc
+
+
+@app.get("/v1/ops/ledger-integrity", tags=["ops"])
+def ops_ledger_integrity() -> dict:
+    try:
+        return verification._request("GET", "/v1/ledger/integrity").json()  # noqa: SLF001
+    except ServiceError as exc:
+        raise HTTPException(status_code=503, detail=exc.detail) from exc
+
+
+@app.post("/v1/ops/revoke-token", tags=["ops"])
+def ops_revoke_token(req: RevokeRequest, agent: dict = Depends(current_agent)) -> dict:
+    """Withdraw a credential -- the recall path.
+
+    Authenticated, because revocation takes a product off the market
+    instantly: everything that re-verifies downstream, including payments
+    already in flight against a live quote, starts failing the moment this
+    returns.
+    """
+    try:
+        return verification._request(  # noqa: SLF001
+            "POST", "/v1/trust-tokens/revoke",
+            json={"token_id": req.token_id, "reason": req.reason},
+        ).json()
+    except ServiceError as exc:
+        status = exc.status_code if exc.status_code == 404 else 503
+        raise HTTPException(status_code=status, detail=exc.detail) from exc

@@ -155,9 +155,9 @@ def db_schema():
 
     db.migrate()
     db.execute(
-        "TRUNCATE trace_spans, orders, trust_ledger, trust_tokens, provenance_events, "
-        "bandit_arms, quotes, competitor_observations, product_embeddings, products "
-        "RESTART IDENTITY CASCADE"
+        "TRUNCATE trace_spans, orders, negotiations, trust_ledger, trust_tokens, "
+        "provenance_events, bandit_arms, quotes, competitor_observations, "
+        "product_relations, product_embeddings, products RESTART IDENTITY CASCADE"
     )
     yield db
 
@@ -177,11 +177,12 @@ def seeded_db(db_schema):
             for p in products:
                 cur.execute(
                     """INSERT INTO products (sku, gtin, name, category, description, attributes,
-                                             currency, internal_cost, map_price, list_price,
-                                             inventory_units, batch)
-                       VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s,%s,%s)""",
+                                             currency, claims, role, internal_cost, map_price,
+                                             list_price, inventory_units, batch)
+                       VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s::jsonb,%s,%s,%s,%s,%s,%s)""",
                     (p["sku"], p["gtin"], p["name"], p["category"], p["description"],
                      json.dumps(p.get("attributes", {})), p.get("currency", "AUD"),
+                     json.dumps(p.get("claims", [])), p.get("role", "core"),
                      p["internal_cost"], p["map_price"], p["list_price"],
                      p.get("inventory_units", 0), p.get("batch")),
                 )

@@ -83,6 +83,118 @@ export interface PriceQuote {
   guardrails_applied: string[];
 }
 
+// --- intent decoding -------------------------------------------------------
+
+export interface IntentConstraint {
+  field: string;
+  op: string;
+  value: unknown;
+  kind: "hard" | "soft";
+  /** the words in the buyer's request that produced this predicate */
+  source_phrase: string;
+  weight: number;
+  rationale: string;
+}
+
+export interface IntentPlan {
+  schema_version: string;
+  raw_query: string;
+  search_query: string;
+  interpreted_need: string;
+  use_cases: string[];
+  experience_level: string | null;
+  recipient: string | null;
+  budget: number | null;
+  budget_is_hard: boolean;
+  values: string[];
+  constraints: IntentConstraint[];
+  bundle_intent: boolean;
+  excluded_skus: string[];
+  decoded_by: "llm" | "deterministic" | "llm+rules";
+}
+
+// --- justification ---------------------------------------------------------
+
+export type ClaimStatus = "VERIFIED" | "ASSERTED_UNATTESTED" | "NOT_CLAIMED";
+
+export interface ClaimVerification {
+  claim: string;
+  label: string;
+  status: ClaimStatus;
+  attested_by: string | null;
+  certificate: string | null;
+  attested_at: string | null;
+  evidence_event: Record<string, unknown> | null;
+}
+
+export interface RequirementMatch {
+  requirement: string;
+  source_phrase: string;
+  satisfied: boolean;
+  kind: "hard" | "soft";
+  field: string;
+  actual_value: unknown;
+  evidence: string;
+}
+
+export interface CandidateAssessment {
+  sku: string;
+  name: string;
+  similarity: number;
+  fit_score: number;
+  eligible: boolean;
+  disqualified_by: string | null;
+  matched: RequirementMatch[];
+  unmet: RequirementMatch[];
+  claims: ClaimVerification[];
+  list_price: number | null;
+}
+
+export interface GroundingReport {
+  /** VERIFIED = the model's prose passed the fact check and shipped.
+   *  TEMPLATE_FALLBACK = it failed and was replaced.
+   *  TEMPLATE_ONLY = no model was consulted. */
+  status: "VERIFIED" | "TEMPLATE_FALLBACK" | "TEMPLATE_ONLY";
+  checked_numbers: string[];
+  violations: string[];
+  composed_by: "llm" | "template";
+}
+
+export interface OfferRationale {
+  interpreted_need: string;
+  summary: string;
+  matched: RequirementMatch[];
+  tradeoffs: string[];
+  verified_claims: ClaimVerification[];
+  rejected_alternatives: { sku: string; name: string; reason: string; fit_score: number }[];
+  grounding: GroundingReport;
+}
+
+// --- bundles ---------------------------------------------------------------
+
+export interface BundleItem {
+  sku: string;
+  name: string;
+  role: "core" | "accessory";
+  role_in_bundle: string;
+  price: PriceQuote;
+  trust_token_ref: string;
+  trust_status: string;
+  attributes: Record<string, unknown>;
+  essential: boolean;
+}
+
+export interface Bundle {
+  bundle_id: string;
+  items: BundleItem[];
+  subtotal: number;
+  bundle_discount: number;
+  total: number;
+  currency: string;
+  guardrails_applied: string[];
+  dropped: { sku: string; name: string; reason: string }[];
+}
+
 export interface OfferResult {
   schema_version: string;
   offer_id: string;
@@ -93,6 +205,11 @@ export interface OfferResult {
   trust_token_ref: string;
   trust_status: string;
   trust_confidence: number;
+  rationale: OfferRationale | null;
+  bundle: Bundle | null;
+  negotiable: boolean;
+  negotiation_id: string | null;
+  intent: IntentPlan | null;
 }
 
 export interface RejectionResult {
@@ -101,6 +218,14 @@ export interface RejectionResult {
   query: string;
   reason_code: string;
   detail: string;
+  intent: IntentPlan | null;
+  considered: CandidateAssessment[];
+  unmet_requirements: RequirementMatch[];
+}
+
+/** What the buyer actually pays: the kit total when there is one. */
+export function payableAmount(offer: OfferResult): number {
+  return offer.bundle ? offer.bundle.total : offer.price.amount;
 }
 
 export type QueryOutcome = "OFFER" | "REJECTED";
@@ -199,6 +324,8 @@ export function pay(
     quote_id: string;
     amount: number;
     trust_token_ref: string;
+    items?: CartItem[];
+    bundle_id?: string | null;
   },
 ): Promise<OrderResult> {
   return request<OrderResult>(
@@ -209,6 +336,13 @@ export function pay(
 }
 
 /** The Cart Mandate the gateway composed and signed on the agent's behalf. */
+export interface CartItem {
+  sku: string;
+  quote_id: string;
+  amount: number;
+  trust_token_ref: string;
+}
+
 export interface CartMandate {
   mandate_id: string;
   intent_mandate_id: string;
@@ -218,6 +352,10 @@ export interface CartMandate {
   amount: number;
   currency: string;
   trust_token_ref: string;
+  /** one line per component when the cart is a kit; each is re-validated at
+   *  settlement, so a revoked credential on any line fails the whole cart */
+  items: CartItem[];
+  bundle_id: string | null;
   signed_at: number;
   signature: string;
 }
@@ -391,4 +529,84 @@ export function getEvents(limit = 50): Promise<EventsResponse> {
 
 export function eventStreamUrl(): string {
   return `${GATEWAY_URL}/v1/events/stream`;
+}
+
+// ---------------------------------------------------------------------------
+// Negotiation -- the buyer's agent countering the merchant's offer
+// ---------------------------------------------------------------------------
+
+export type NegotiationOutcome =
+  | "CONCEDED"
+  | "PARTIAL_CONCESSION"
+  | "ALTERNATIVE_PROPOSED"
+  | "BUNDLE_RESTRUCTURED"
+  | "HELD"
+  | "EXHAUSTED";
+
+export interface NegotiationRound {
+  round: number;
+  actor: "buyer_agent" | "merchant_agent";
+  proposed_amount: number | null;
+  outcome: NegotiationOutcome | null;
+  reason_code: string | null;
+  message: string;
+  quote_id: string | null;
+  sku: string | null;
+  at: number;
+}
+
+export interface NegotiationResult {
+  negotiation_id: string;
+  sku: string;
+  outcome: NegotiationOutcome;
+  reason_code: string | null;
+  amount: number;
+  currency: string;
+  quote: PriceQuote | null;
+  offer: OfferResult | null;
+  bundle: Bundle | null;
+  message: string;
+  rounds_used: number;
+  rounds_remaining: number;
+  concession_from: number | null;
+  rounds: NegotiationRound[];
+}
+
+/**
+ * Counter a standing offer. The buyer's agent sends a number and the
+ * negotiation handle it was given with the offer; the merchant already holds
+ * the decoded intent and the eligible alternatives, so nothing else is needed.
+ */
+export function negotiate(
+  token: string,
+  params: { negotiation_id: string; target_amount: number; reason?: string },
+): Promise<NegotiationResult> {
+  return request<NegotiationResult>(
+    "/v1/negotiate",
+    { method: "POST", body: JSON.stringify(params) },
+    token,
+  );
+}
+
+export interface NegotiationSummary {
+  negotiation_id: string;
+  agent_id: string;
+  sku: string;
+  opening_amount: number;
+  current_amount: number;
+  status: string;
+  rounds: NegotiationRound[];
+  opened_at: number;
+}
+
+export function getNegotiations(limit = 25): Promise<{ negotiations: NegotiationSummary[] }> {
+  return request<{ negotiations: NegotiationSummary[] }>(`/v1/ops/negotiations?limit=${limit}`);
+}
+
+// ---------------------------------------------------------------------------
+// Values claims -- what a product asserts, and what its provenance attests
+// ---------------------------------------------------------------------------
+
+export function getClaims(sku: string): Promise<{ sku: string; claims: ClaimVerification[] }> {
+  return request<{ sku: string; claims: ClaimVerification[] }>(`/v1/claims/${sku}`);
 }

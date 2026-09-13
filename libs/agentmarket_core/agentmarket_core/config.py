@@ -103,6 +103,22 @@ class Settings:
 
     # --- storefront workflow ---
     max_repair_retries: int = field(default_factory=lambda: _env_int("MAX_REPAIR_RETRIES", 2))
+    retrieval_top_k: int = field(default_factory=lambda: _env_int("RETRIEVAL_TOP_K", 12))
+
+    # --- bundling (challenge brief: dynamic product bundling) ---
+    bundle_max_items: int = field(default_factory=lambda: _env_int("BUNDLE_MAX_ITEMS", 5))
+    # Cap on the bundle discount, applied only to headroom above every
+    # component's own MAP/margin floor. A cap as well as a floor because a
+    # discount large enough to be suspicious is a pricing-integrity problem
+    # even when each component technically clears its floor.
+    bundle_max_discount_ratio: float = field(default_factory=lambda: _env_float("BUNDLE_MAX_DISCOUNT", 0.12))
+
+    # --- negotiation (challenge brief: dynamic B2A negotiation protocol) ---
+    max_negotiation_rounds: int = field(default_factory=lambda: _env_int("MAX_NEGOTIATION_ROUNDS", 3))
+    # How far below the opening ask the engine may go before it is simply
+    # discounting for anyone who asks. Expressed against fair value, so a
+    # thin-margin SKU concedes less than a fat one without special-casing.
+    max_concession_ratio: float = field(default_factory=lambda: _env_float("MAX_CONCESSION_RATIO", 0.18))
 
     # --- seed data (used by scripts/seed.py to populate Postgres) ---
     data_dir: Path = field(default_factory=lambda: Path(_env("AGENTMARKET_DATA_DIR", str(REPO_ROOT / "data"))))
@@ -132,6 +148,9 @@ TOPIC_TRUST_ISSUED = "trust.issued"
 TOPIC_TRUST_REVOKED = "trust.revoked"
 TOPIC_STOREFRONT_OFFER = "storefront.offer"
 TOPIC_STOREFRONT_REJECTION = "storefront.rejection"
+TOPIC_INTENT_DECODED = "storefront.intent_decoded"
+TOPIC_NEGOTIATION_ROUND = "negotiation.round"
+TOPIC_CLAIM_UNATTESTED = "trust.claim_unattested"
 TOPIC_PAYMENT_SETTLED = "payments.settled"
 TOPIC_PAYMENT_REJECTED = "payments.rejected"
 TOPIC_TRACE_SPAN = "observability.trace_span"
@@ -144,6 +163,9 @@ ALL_TOPICS = [
     TOPIC_TRUST_REVOKED,
     TOPIC_STOREFRONT_OFFER,
     TOPIC_STOREFRONT_REJECTION,
+    TOPIC_INTENT_DECODED,
+    TOPIC_NEGOTIATION_ROUND,
+    TOPIC_CLAIM_UNATTESTED,
     TOPIC_PAYMENT_SETTLED,
     TOPIC_PAYMENT_REJECTED,
     TOPIC_TRACE_SPAN,

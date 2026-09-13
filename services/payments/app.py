@@ -10,7 +10,7 @@ from agentmarket_core.adapters.bus import EventBus
 from agentmarket_core.clients import PricingClient, VerificationClient
 from agentmarket_core.domain.mandates import MandateService
 from agentmarket_core.domain.payments import PaymentOrchestrator
-from agentmarket_core.models import CartMandate, IntentMandate, OrderResult
+from agentmarket_core.models import CartItem, CartMandate, IntentMandate, OrderResult
 from agentmarket_core.service import create_app
 from agentmarket_core import db
 
@@ -38,6 +38,8 @@ class CartRequest(BaseModel):
     quote_id: str
     amount: float
     trust_token_ref: str
+    items: list[CartItem] = []
+    bundle_id: str | None = None
 
 
 class PayRequest(BaseModel):
@@ -83,7 +85,7 @@ def create_cart(req: CartRequest) -> CartMandate:
     return mandate_service.create_cart_mandate(
         principal_id=req.principal_id, intent_mandate=req.intent_mandate,
         sku=req.sku, quote_id=req.quote_id, amount=req.amount,
-        trust_token_ref=req.trust_token_ref,
+        trust_token_ref=req.trust_token_ref, items=req.items, bundle_id=req.bundle_id,
     )
 
 

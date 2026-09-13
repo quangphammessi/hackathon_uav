@@ -7,6 +7,7 @@ none of which any single-service test can see.
 """
 from __future__ import annotations
 
+import json
 import os
 import urllib.error
 import urllib.request
@@ -78,7 +79,8 @@ class TestStorefrontJourney:
 
     def test_a_provenance_gap_is_refused_with_a_reason_code(self, agent):
         resp = call("POST", "/v1/query",
-                    {"query": "I want the -12C down sleeping bag"}, token=agent["token"])
+                    {"query": "a sleeping bag rated to -12C for alpine conditions"},
+                    token=agent["token"])
         assert resp["outcome"] == "REJECTED"
         assert resp["result"]["reason_code"] == "CHAIN_GAP"
 
@@ -106,8 +108,12 @@ class TestStorefrontJourney:
                     {"query": "a lightweight water filter for hiking"}, token=agent["token"])
         spans = call("GET", f"/v1/trace/{resp['trace_id']}")["spans"]
         names = [s["name"] for s in spans]
-        assert names[:4] == ["planner", "retriever", "spec_extraction", "schema_validator"]
+        assert names[:3] == ["intent_decode", "retrieve", "assess"]
         assert all(s["duration_ms"] >= 0 for s in spans)
+        # The decode is recorded in the trace, not just used and discarded:
+        # an unauditable decode is indistinguishable from a guess.
+        decode = next(s for s in spans if s["name"] == "intent_decode")
+        assert decode["attributes"]["outputs"]["constraints"]
 
 
 @requires_gateway
@@ -195,3 +201,290 @@ class TestOpsSurface:
         skus = call("GET", "/v1/ops/overview")["provenance"]["skus"]
         not_ready = [s["sku"] for s in skus if not s["ready"]]
         assert not_ready == ["0950600013480"]
+
+
+@requires_gateway
+class TestIntentDecoding:
+    """The capability the challenge weights first, exercised over real HTTP."""
+
+    COMPLEX = ("My dad is turning 60 and wants to start hiking. He has never done it before, "
+               "he gets cold easily, and I only want brands that can actually prove they're "
+               "ethically made. Budget is around $400 for the whole kit.")
+
+    @pytest.fixture(scope="class")
+    def response(self, agent):
+        return call("POST", "/v1/query", {"query": self.COMPLEX}, token=agent["token"])
+
+    def test_a_multi_constraint_request_produces_an_offer(self, response):
+        assert response["outcome"] == "OFFER"
+
+    def test_the_decode_is_returned_to_the_buyer(self, response):
+        """The buyer's agent can check what the merchant thought it asked for,
+        rather than trusting the answer."""
+        intent = response["result"]["intent"]
+        assert intent["interpreted_need"]
+        assert intent["experience_level"] == "beginner"
+        assert intent["budget"] == 400.0
+        assert intent["bundle_intent"] is True
+        assert "ethical_labour" in intent["values"]
+
+    def test_every_constraint_cites_the_words_it_came_from(self, response):
+        for constraint in response["result"]["intent"]["constraints"]:
+            assert constraint["source_phrase"], constraint["field"]
+
+    def test_experience_level_gates_rather_than_ranks(self, response):
+        """An expert product must not be sold to a stated first-timer, however
+        well it scores."""
+        offer = response["result"]
+        skus = [offer["sku"]] + [i["sku"] for i in (offer.get("bundle") or {}).get("items", [])]
+        catalog = {p["sku"]: p for p in call("GET", "/v1/catalog")["products"]}
+        for sku in skus:
+            assert catalog[sku]["attributes"]["experience_level"] == "beginner"
+
+    def test_a_spec_threshold_excludes_a_product_that_misses_it(self, agent):
+        resp = call("POST", "/v1/query",
+                    {"query": "a sleeping bag rated to -12C for alpine conditions"},
+                    token=agent["token"])
+        considered = {c["name"]: c for c in resp["result"].get("considered", [])}
+        warm = next((c for n, c in considered.items() if "WarmNest" in n), None)
+        assert warm is not None and not warm["eligible"]
+
+
+@requires_gateway
+class TestJustification:
+    def test_an_offer_explains_itself_requirement_by_requirement(self, agent):
+        resp = call("POST", "/v1/query",
+                    {"query": "trail shoes for someone who has never hiked before, under $200"},
+                    token=agent["token"])
+        why = resp["result"]["rationale"]
+        assert why["summary"]
+        assert why["matched"], "an offer with no evidence is just a SKU"
+        for match in why["matched"]:
+            assert match["requirement"] and match["evidence"]
+
+    def test_the_justification_reports_how_it_was_grounded(self, agent):
+        resp = call("POST", "/v1/query",
+                    {"query": "a water filter for day hikes under $60"}, token=agent["token"])
+        grounding = resp["result"]["rationale"]["grounding"]
+        assert grounding["status"] in {"VERIFIED", "TEMPLATE_FALLBACK", "TEMPLATE_ONLY"}
+        if grounding["status"] == "VERIFIED":
+            assert not grounding["violations"]
+
+    def test_unmet_preferences_are_disclosed(self, agent):
+        resp = call("POST", "/v1/query",
+                    {"query": "trail shoes for a beginner who gets cold easily"},
+                    token=agent["token"])
+        why = resp["result"]["rationale"]
+        assert isinstance(why["tradeoffs"], list)
+
+    def test_a_refusal_names_the_binding_constraint(self, agent):
+        resp = call("POST", "/v1/query",
+                    {"query": "a sleeping bag rated to -12C for alpine conditions"},
+                    token=agent["token"])
+        result = resp["result"]
+        assert result["reason_code"] == "CHAIN_GAP"
+        assert "supply-chain" in result["detail"] or "provenance" in result["detail"]
+        assert result["considered"], "a refusal should show what was considered"
+
+
+@requires_gateway
+class TestVerifiableValues:
+    """"Only buy from ethical brands", answered with evidence."""
+
+    def test_an_attested_claim_verifies(self):
+        claims = {c["claim"]: c for c in call("GET", "/v1/claims/0950600013459")["claims"]}
+        assert claims["recycled_materials"]["status"] == "VERIFIED"
+        assert claims["recycled_materials"]["attested_by"]
+        assert claims["recycled_materials"]["certificate"]
+
+    def test_an_asserted_claim_with_no_attestation_is_flagged(self):
+        """The greenwashing case. The merchant says it; nothing backs it."""
+        claims = {c["claim"]: c for c in call("GET", "/v1/claims/0950600013534")["claims"]}
+        assert claims["recycled_materials"]["status"] == "ASSERTED_UNATTESTED"
+        assert claims["recycled_materials"]["attested_by"] is None
+
+    def test_a_proof_demand_excludes_the_unattested_product(self, agent):
+        resp = call("POST", "/v1/query", {
+            "query": ("a waterproof rain jacket for day hikes, only from a brand that can "
+                      "prove its recycled-material claim, under $230")},
+            token=agent["token"])
+        assert resp["outcome"] == "OFFER"
+        assert resp["result"]["sku"] != "0950600013534", "the greenwashed product must not win"
+        rejected = [a["name"] for a in resp["result"]["rationale"]["rejected_alternatives"]]
+        assert any("EcoTrail" in name for name in rejected)
+
+    def test_verified_claims_are_inside_the_signed_credential(self):
+        """A claim checked separately, after the fact, would not inherit the
+        credential's tamper-evidence or its revocation."""
+        token_id = call("POST", "/v1/query", {"query": "trail shoes for a beginner under $200"},
+                        token=call("POST", "/v1/agents/token",
+                                   {"agent_name": "claims-check"})["token"])["result"]["trust_token_ref"]
+        record = call("GET", f"/v1/ops/provenance/0950600013510")
+        assert record["ready"] is True
+        assert token_id.startswith("vc_")
+
+
+@requires_gateway
+class TestBundling:
+    @pytest.fixture(scope="class")
+    def bundle(self, agent):
+        resp = call("POST", "/v1/query", {
+            "query": ("everything a complete beginner needs for a first overnight camping trip, "
+                      "he gets cold easily, budget around $450")},
+            token=agent["token"])
+        assert resp["outcome"] == "OFFER", resp["result"].get("reason_code")
+        return resp["result"]["bundle"]
+
+    def test_a_kit_request_returns_several_items(self, bundle):
+        assert bundle is not None
+        assert len(bundle["items"]) >= 2
+
+    def test_every_item_states_its_job_in_the_kit(self, bundle):
+        for item in bundle["items"]:
+            assert item["role_in_bundle"]
+
+    def test_every_component_is_independently_trust_verified(self, bundle):
+        """One unverifiable component contaminates the whole proposal."""
+        for item in bundle["items"]:
+            assert item["trust_status"] == "PASS"
+            assert item["trust_token_ref"].startswith("vc_")
+
+    def test_the_bundle_total_is_the_discounted_subtotal(self, bundle):
+        assert bundle["total"] == pytest.approx(
+            bundle["subtotal"] - bundle["bundle_discount"], abs=0.01)
+        assert bundle["bundle_discount"] >= 0
+
+    def test_the_discount_is_bounded_and_the_bound_is_named(self, bundle):
+        assert bundle["guardrails_applied"]
+        assert bundle["bundle_discount"] <= bundle["subtotal"] * 0.5
+
+    def test_excluded_items_carry_a_reason(self, bundle):
+        for drop in bundle["dropped"]:
+            assert drop["reason"]
+
+
+@requires_gateway
+class TestNegotiation:
+    @pytest.fixture
+    def offer(self, agent):
+        resp = call("POST", "/v1/query",
+                    {"query": "a waterproof hiking boot, budget is flexible around $200"},
+                    token=agent["token"])
+        assert resp["outcome"] == "OFFER", resp["result"].get("reason_code")
+        return resp["result"]
+
+    def test_an_offer_comes_with_a_negotiation_handle(self, offer):
+        assert offer["negotiation_id"]
+        assert offer["negotiable"] is True
+
+    def test_a_reachable_counter_is_met(self, agent, offer):
+        target = round(offer["price"]["amount"] * 0.96, 2)
+        resp = call("POST", "/v1/negotiate", {
+            "negotiation_id": offer["negotiation_id"], "target_amount": target},
+            token=agent["token"])
+        assert resp["outcome"] == "CONCEDED"
+        assert resp["amount"] <= target + 0.01
+
+    def test_a_conceded_price_is_a_real_quote_that_can_be_paid(self, agent, offer):
+        """A negotiated price that settlement would reject is not a
+        negotiation."""
+        target = round(offer["price"]["amount"] * 0.95, 2)
+        resp = call("POST", "/v1/negotiate", {
+            "negotiation_id": offer["negotiation_id"], "target_amount": target},
+            token=agent["token"])
+        assert resp["quote"], "a concession must issue a quote"
+        intent = call("POST", "/v1/principals/intent-mandate", {
+            "principal_id": "principal_test", "agent_id": agent["agent_id"],
+            "instructions": "buy the negotiated boot", "max_amount": 500.0})
+        order = call("POST", "/v1/pay", {
+            "principal_id": "principal_test", "intent_mandate": intent,
+            "sku": resp["sku"], "quote_id": resp["quote"]["quote_id"],
+            "amount": resp["amount"], "trust_token_ref": offer["trust_token_ref"]},
+            token=agent["token"])
+        assert order["status"] == "SETTLED"
+
+    def test_an_impossible_counter_is_refused_without_leaking_the_floor(self, agent, offer):
+        resp = call("POST", "/v1/negotiate", {
+            "negotiation_id": offer["negotiation_id"], "target_amount": 1.00},
+            token=agent["token"])
+        assert resp["outcome"] in {"PARTIAL_CONCESSION", "HELD", "ALTERNATIVE_PROPOSED"}
+        blob = str(resp).lower()
+        assert "internal_cost" not in blob and "map_price" not in blob
+        assert "margin" not in blob
+
+    def test_the_round_limit_is_enforced(self, agent, offer):
+        outcomes = []
+        for _ in range(5):
+            outcomes.append(call("POST", "/v1/negotiate", {
+                "negotiation_id": offer["negotiation_id"], "target_amount": 5.00},
+                token=agent["token"])["outcome"])
+        assert "EXHAUSTED" in outcomes, "an unbounded negotiation is a denial-of-service"
+
+    def test_an_unknown_negotiation_is_a_404(self, agent):
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            call("POST", "/v1/negotiate",
+                 {"negotiation_id": "neg_does_not_exist", "target_amount": 10.0},
+                 token=agent["token"])
+        assert exc.value.code == 404
+
+    def test_negotiating_without_a_token_is_rejected(self, offer):
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            call("POST", "/v1/negotiate",
+                 {"negotiation_id": offer["negotiation_id"], "target_amount": 10.0})
+        assert exc.value.code == 401
+
+
+@requires_gateway
+class TestBundleCheckout:
+    def test_a_kit_settles_as_one_signed_cart_with_many_lines(self, agent):
+        resp = call("POST", "/v1/query", {
+            "query": ("everything a beginner needs for a first overnight trip, he gets cold "
+                      "easily, budget around $450")},
+            token=agent["token"])
+        assert resp["outcome"] == "OFFER"
+        offer = resp["result"]
+        bundle = offer["bundle"]
+        assert bundle and len(bundle["items"]) >= 2
+
+        intent = call("POST", "/v1/principals/intent-mandate", {
+            "principal_id": "principal_test", "agent_id": agent["agent_id"],
+            "instructions": "buy the beginner kit", "max_amount": 900.0})
+        items = [{"sku": i["sku"], "quote_id": i["price"]["quote_id"],
+                  "amount": i["price"]["amount"], "trust_token_ref": i["trust_token_ref"]}
+                 for i in bundle["items"]]
+        order = call("POST", "/v1/pay", {
+            "principal_id": "principal_test", "intent_mandate": intent,
+            "sku": bundle["items"][0]["sku"],
+            "quote_id": bundle["items"][0]["price"]["quote_id"],
+            "amount": bundle["total"], "trust_token_ref": bundle["items"][0]["trust_token_ref"],
+            "items": items, "bundle_id": bundle["bundle_id"]},
+            token=agent["token"])
+        assert order["status"] == "SETTLED", order.get("reason_code")
+
+        detail = call("GET", f"/v1/orders/{order['order_id']}")
+        cart = detail.get("cart_mandate") or detail["order"]["cart_mandate"]
+        if isinstance(cart, str):
+            cart = json.loads(cart)
+        assert len(cart["items"]) == len(items)
+        assert cart["signature"]
+
+    def test_a_cart_claiming_more_than_its_lines_is_refused(self, agent):
+        """The arithmetic still works out, which is exactly why it has to be
+        checked rather than assumed."""
+        resp = call("POST", "/v1/query",
+                    {"query": "a water filter for day hikes under $60"}, token=agent["token"])
+        offer = resp["result"]
+        intent = call("POST", "/v1/principals/intent-mandate", {
+            "principal_id": "principal_test", "agent_id": agent["agent_id"],
+            "instructions": "buy a filter", "max_amount": 900.0})
+        order = call("POST", "/v1/pay", {
+            "principal_id": "principal_test", "intent_mandate": intent,
+            "sku": offer["sku"], "quote_id": offer["price"]["quote_id"],
+            "amount": offer["price"]["amount"] * 3,
+            "trust_token_ref": offer["trust_token_ref"],
+            "items": [{"sku": offer["sku"], "quote_id": offer["price"]["quote_id"],
+                       "amount": offer["price"]["amount"],
+                       "trust_token_ref": offer["trust_token_ref"]}]},
+            token=agent["token"])
+        assert order["status"] == "REJECTED"
+        assert order["reason_code"] == "BUNDLE_TOTAL_EXCEEDS_LINES"

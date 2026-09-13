@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ApiError,
+  getClaims,
   getLedger,
   getMarketDetail,
+  getNegotiations,
   getOpsOverview,
+  type ClaimVerification,
   type LedgerDetail,
   type MarketDetail,
+  type NegotiationSummary,
   type OpsOverview,
 } from "@/lib/api";
 import { ServiceHealthStrip } from "@/components/ops/ServiceHealthStrip";
@@ -17,6 +21,8 @@ import { ProvenanceTable } from "@/components/ops/ProvenanceTable";
 import { LedgerPanel } from "@/components/ops/LedgerPanel";
 import { OrdersTable } from "@/components/ops/OrdersTable";
 import { TracesTable } from "@/components/ops/TracesTable";
+import { NegotiationsPanel } from "@/components/ops/NegotiationsPanel";
+import { ClaimsPanel } from "@/components/ops/ClaimsPanel";
 import { EventFeed } from "@/components/ops/EventFeed";
 
 function Section({
@@ -41,6 +47,10 @@ function Section({
   );
 }
 
+// EcoTrail Recycled Rain Shell: asserts "recycled materials" and "low-carbon
+// transport", and its provenance chain attests neither.
+const GREENWASHED_EXAMPLE_SKU = "0950600013534";
+
 export default function OpsPage() {
   const [overview, setOverview] = useState<OpsOverview | null>(null);
   const [overviewError, setOverviewError] = useState<string | null>(null);
@@ -53,6 +63,14 @@ export default function OpsPage() {
 
   const [ledgerDetail, setLedgerDetail] = useState<LedgerDetail | null>(null);
   const [verifying, setVerifying] = useState(false);
+
+  const [negotiations, setNegotiations] = useState<NegotiationSummary[] | null>(null);
+  const [negotiationsError, setNegotiationsError] = useState<string | null>(null);
+
+  const [claimsSku, setClaimsSku] = useState<string | null>(null);
+  const [claims, setClaims] = useState<ClaimVerification[] | null>(null);
+  const [claimsLoading, setClaimsLoading] = useState(false);
+  const [claimsError, setClaimsError] = useState<string | null>(null);
 
   const loadOverview = useCallback(() => {
     setOverviewLoading(true);
@@ -74,6 +92,29 @@ export default function OpsPage() {
         // the summary panel already reports ledger health; entries are best-effort
       });
   }, []);
+
+  useEffect(() => {
+    getNegotiations(25)
+      .then((r) => setNegotiations(r.negotiations))
+      .catch((e: unknown) => setNegotiationsError(errorMessage(e)));
+  }, []);
+
+  const lookupClaims = useCallback((sku: string) => {
+    setClaimsSku(sku);
+    setClaimsLoading(true);
+    setClaimsError(null);
+    getClaims(sku)
+      .then((r) => setClaims(r.claims))
+      .catch((e: unknown) => setClaimsError(errorMessage(e)))
+      .finally(() => setClaimsLoading(false));
+  }, []);
+
+  // Open on the product that asserts two values claims and has attestation for
+  // neither. An empty panel makes the merchant look compliant by default; the
+  // point of this panel is that the gap is visible without being hunted for.
+  useEffect(() => {
+    lookupClaims(GREENWASHED_EXAMPLE_SKU);
+  }, [lookupClaims]);
 
   const selectSku = useCallback((sku: string) => {
     setSelectedSku(sku);
@@ -163,9 +204,26 @@ export default function OpsPage() {
 
       <Section
         title="Provenance & trust"
-        description="Deterministic verification over supply-chain event chains."
+        description="Deterministic verification over supply-chain event chains. Click a row to look up its values claims below."
       >
-        <ProvenanceTable skus={overview.provenance.skus} />
+        <ProvenanceTable
+          skus={overview.provenance.skus}
+          selectedSku={claimsSku}
+          onSelect={lookupClaims}
+        />
+      </Section>
+
+      <Section
+        title="Values claims"
+        description="What a product asserts vs. what its provenance actually attests -- the greenwashing detector."
+      >
+        <ClaimsPanel
+          sku={claimsSku}
+          claims={claims}
+          loading={claimsLoading}
+          error={claimsError}
+          onLookup={lookupClaims}
+        />
       </Section>
 
       <Section
@@ -188,6 +246,16 @@ export default function OpsPage() {
           <TracesTable traces={overview.traces.traces} />
         </Section>
       </div>
+
+      <Section
+        title="Negotiations"
+        description="Every counter-offer conversation between a buyer agent and the merchant agent."
+      >
+        {negotiationsError && !negotiations && (
+          <p className="text-sm text-err">{negotiationsError}</p>
+        )}
+        {negotiations && <NegotiationsPanel negotiations={negotiations} />}
+      </Section>
 
       <Section title="Live events" description="Server-sent event bus, newest first.">
         <EventFeed />

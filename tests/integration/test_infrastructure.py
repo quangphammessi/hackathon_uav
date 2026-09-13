@@ -48,8 +48,12 @@ class TestVectorSearch:
         return store
 
     def test_indexes_every_product(self, indexed, seeded_db):
-        row = seeded_db.query_one("SELECT count(*) AS n FROM product_embeddings")
-        assert row["n"] == 8
+        """Every catalog row gets an embedding -- asserted against the catalog
+        rather than a hard-coded count, so adding a product cannot make the
+        suite fail for a reason that has nothing to do with the code."""
+        embedded = seeded_db.query_one("SELECT count(*) AS n FROM product_embeddings")["n"]
+        products = seeded_db.query_one("SELECT count(*) AS n FROM products")["n"]
+        assert embedded == products > 0
 
     def test_finds_the_right_product_for_a_natural_query(self, indexed):
         hits = indexed.search("waterproof hiking boot", top_k=3)
@@ -83,12 +87,15 @@ class TestVectorSearch:
                 cur.execute("SET enable_seqscan = off")
                 cur.execute("SELECT embedding FROM product_embeddings WHERE sku = %s", (TEST_SKU,))
                 probe = cur.fetchone()["embedding"]
+                cur.execute("SELECT count(*) AS n FROM product_embeddings")
+                total = cur.fetchone()["n"]
+                # The limit is the whole indexed set, so any row the index
+                # fails to return is a dropped match rather than a truncation.
                 cur.execute(
-                    "SELECT sku FROM product_embeddings ORDER BY embedding <=> %s LIMIT 8",
-                    (probe,),
+                    "SELECT sku FROM product_embeddings ORDER BY embedding <=> %s LIMIT %s",
+                    (probe, total),
                 )
                 rows = cur.fetchall()
-        total = seeded_db.query_one("SELECT count(*) AS n FROM product_embeddings")["n"]
         assert len(rows) == total, "ANN index dropped rows -- is it ivfflat built on an empty table?"
 
     def test_out_of_stock_products_are_excluded(self, indexed, seeded_db):
@@ -313,3 +320,162 @@ class TestRedisStreamsBus:
 
         assert received, "event did not arrive through Redis Streams within 10s"
         assert received[0]["payload"] == {"sku": "X", "n": 1}
+
+
+@requires_postgres
+class TestStructuredRetrieval:
+    """The SQL half of hybrid retrieval.
+
+    This is the leg that exists so a product satisfying every stated
+    requirement cannot be missed, which makes its correctness the whole point.
+    It is also real SQL over jsonb containment operators, so it is exactly the
+    kind of thing a mocked store would let through broken.
+    """
+
+    def test_filters_on_experience_level(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        skus = PostgresProductStore().structured_candidates(experience_levels=["beginner"], limit=50)
+        assert skus
+        for sku in skus:
+            row = seeded_db.query_one("SELECT attributes FROM products WHERE sku = %s", (sku,))
+            assert row["attributes"]["experience_level"] == "beginner"
+
+    def test_filters_on_a_jsonb_array_of_use_cases(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        skus = PostgresProductStore().structured_candidates(use_cases=["cold_weather"], limit=50)
+        assert skus
+        for sku in skus:
+            row = seeded_db.query_one("SELECT attributes FROM products WHERE sku = %s", (sku,))
+            assert "cold_weather" in row["attributes"]["use_cases"]
+
+    def test_filters_on_asserted_claims(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        skus = PostgresProductStore().structured_candidates(claims=["ethical_labour"], limit=50)
+        assert skus
+        for sku in skus:
+            row = seeded_db.query_one("SELECT claims FROM products WHERE sku = %s", (sku,))
+            assert "ethical_labour" in row["claims"]
+
+    def test_filters_compose_as_an_and(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        store = PostgresProductStore()
+        both = set(store.structured_candidates(
+            experience_levels=["beginner"], claims=["ethical_labour"], limit=50))
+        assert both <= set(store.structured_candidates(experience_levels=["beginner"], limit=50))
+        assert both <= set(store.structured_candidates(claims=["ethical_labour"], limit=50))
+
+    def test_no_filters_returns_the_in_stock_catalog(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        seeded_db.execute("UPDATE products SET inventory_units = 0 WHERE sku = %s", (TEST_SKU,))
+        skus = PostgresProductStore().structured_candidates(limit=50)
+        assert TEST_SKU not in skus
+
+    def test_a_price_ceiling_is_applied_in_sql(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        skus = PostgresProductStore().structured_candidates(max_price=60.0, limit=50)
+        for sku in skus:
+            row = seeded_db.query_one(
+                "SELECT list_price::float AS p FROM products WHERE sku = %s", (sku,))
+            assert row["p"] <= 60.0
+
+
+@requires_postgres
+class TestProductGraph:
+    def test_complements_come_back_from_the_graph(self, seeded_db):
+        from agentmarket_core.adapters.productstore.postgres_store import PostgresProductStore
+
+        seeded_db.execute(
+            "INSERT INTO product_relations (sku, related_sku, relation) VALUES (%s,%s,'complement')"
+            " ON CONFLICT DO NOTHING",
+            (TEST_SKU, SLEEPING_BAG),
+        )
+        assert SLEEPING_BAG in PostgresProductStore().complements_of(TEST_SKU)
+
+    def test_an_edge_to_a_missing_product_is_rejected_by_the_database(self, seeded_db):
+        """The graph cannot point at a product that does not exist; a dangling
+        complement would put a phantom SKU into a bundle."""
+        import psycopg
+
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            seeded_db.execute(
+                "INSERT INTO product_relations (sku, related_sku, relation)"
+                " VALUES (%s,'NOPE','complement')", (TEST_SKU,))
+
+
+@requires_postgres
+class TestValuesClaimsAgainstRealProvenance:
+    def test_a_claim_is_verified_from_a_certification_event(self, seeded_db):
+        from agentmarket_core.domain import claims as claims_mod
+        from agentmarket_core.domain import provenance
+
+        seeded_db.execute(
+            """INSERT INTO provenance_events (sku, batch, event_type, biz_step, location,
+                                              actor, event_time, note)
+               VALUES (%s, %s, 'CertificationEvent', 'certification', 'Audit-1',
+                       'Fair Labor Association', '2026-08-03T07:00:00Z',
+                       'claim=ethical_labour; certificate=FLA-2026-0001; scope=batch')
+               ON CONFLICT DO NOTHING""",
+            (TEST_SKU, "B-TP-2026-08"),
+        )
+        status = provenance.chain_status(TEST_SKU, "B-TP-2026-08")
+        results = claims_mod.verify_claims(["ethical_labour"], status["events"], ["ethical_labour"])
+        assert results[0].status == "VERIFIED"
+        assert results[0].attested_by == "Fair Labor Association"
+
+    def test_the_attestation_is_covered_by_the_event_chain_hash(self, seeded_db):
+        """A verified claim has to inherit the credential's tamper-evidence,
+        which only holds if the certification event is inside the hash."""
+        from agentmarket_core.domain import provenance
+
+        before = provenance.chain_status(TEST_SKU, "B-TP-2026-08")["event_chain_hash"]
+        seeded_db.execute(
+            """INSERT INTO provenance_events (sku, batch, event_type, biz_step, location,
+                                              actor, event_time, note)
+               VALUES (%s, %s, 'CertificationEvent', 'certification', 'Audit-9',
+                       'Some Other Auditor', '2026-08-04T07:00:00Z',
+                       'claim=recycled_materials; certificate=X-1; scope=batch')""",
+            (TEST_SKU, "B-TP-2026-08"),
+        )
+        after = provenance.chain_status(TEST_SKU, "B-TP-2026-08")["event_chain_hash"]
+        assert before != after
+
+
+@requires_postgres
+class TestNegotiationPersistence:
+    def test_a_negotiation_survives_the_process_that_opened_it(self, db_schema):
+        """The buyer's agent may counter against a different replica than the
+        one that made the offer."""
+        from agentmarket_core.domain.negotiation import NegotiationStore
+
+        opened = NegotiationStore().create("agent-1", TEST_SKU, 149.0, "q_abc",
+                                           {"plan": {"raw_query": "x"}})
+        reloaded = NegotiationStore().get(opened["negotiation_id"])
+        assert reloaded["current_amount"] == 149.0
+        assert reloaded["context"]["plan"]["raw_query"] == "x"
+
+    def test_a_restructured_kit_replaces_the_stored_context(self, db_schema):
+        from agentmarket_core.domain import negotiation as neg
+
+        store = neg.NegotiationStore()
+        opened = store.create("agent-1", TEST_SKU, 300.0, "q1",
+                              {"bundle_skus": ["a", "b", "c"]})
+        store.append_round(opened["negotiation_id"],
+                           [neg.buyer_round(1, 200.0)], "BUNDLE_RESTRUCTURED", 200.0, "q2",
+                           context={"bundle_skus": ["a", "b"]})
+        reloaded = store.get(opened["negotiation_id"])
+        assert reloaded["context"]["bundle_skus"] == ["a", "b"]
+        assert reloaded["current_amount"] == 200.0
+
+    def test_omitting_the_context_leaves_it_untouched(self, db_schema):
+        from agentmarket_core.domain import negotiation as neg
+
+        store = neg.NegotiationStore()
+        opened = store.create("agent-1", TEST_SKU, 300.0, "q1", {"keep": "me"})
+        store.append_round(opened["negotiation_id"], [], "HELD", 300.0, "q1")
+        assert store.get(opened["negotiation_id"])["context"] == {"keep": "me"}

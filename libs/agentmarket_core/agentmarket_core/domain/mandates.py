@@ -24,7 +24,7 @@ import json
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from agentmarket_core.models import CartMandate, IntentMandate
+from agentmarket_core.models import CartItem, CartMandate, IntentMandate
 
 
 def _canonical(payload: dict) -> bytes:
@@ -85,15 +85,27 @@ class MandateService:
             "agent_id": m.agent_id, "sku": m.sku, "quote_id": m.quote_id,
             "amount": m.amount, "currency": m.currency,
             "trust_token_ref": m.trust_token_ref, "signed_at": m.signed_at,
+            # Lines are inside the signature, so a bundle cart cannot have an
+            # item swapped or a line's price edited after the principal signed
+            # it. Signing only the total would authorise the number while
+            # leaving what it buys unbound.
+            "items": [
+                {"sku": i.sku, "quote_id": i.quote_id, "amount": i.amount,
+                 "trust_token_ref": i.trust_token_ref}
+                for i in m.items
+            ],
+            "bundle_id": m.bundle_id,
         }
 
     def create_cart_mandate(
         self, principal_id: str, intent_mandate: IntentMandate, sku: str,
         quote_id: str, amount: float, trust_token_ref: str,
+        items: list[CartItem] | None = None, bundle_id: str | None = None,
     ) -> CartMandate:
         mandate = CartMandate(
             intent_mandate_id=intent_mandate.mandate_id, agent_id=intent_mandate.agent_id,
             sku=sku, quote_id=quote_id, amount=amount, trust_token_ref=trust_token_ref,
+            items=list(items or []), bundle_id=bundle_id,
             signature="",
         )
         mandate.signature = base64.b64encode(
