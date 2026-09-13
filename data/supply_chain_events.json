@@ -1,0 +1,40 @@
+[
+  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-VN-14",  "actor": "Northstar Footwear Co.", "ts": "2026-08-02T01:00:00Z"},
+  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-VN-14",  "actor": "Northstar QC Lab",       "ts": "2026-08-03T04:30:00Z"},
+  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-VN-14",  "actor": "Northstar Footwear Co.", "ts": "2026-08-03T09:00:00Z"},
+  {"sku": "0950600013435", "batch": "B-TP-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SGN",       "actor": "PanTrans Logistics",     "ts": "2026-08-06T11:00:00Z"},
+
+  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-BD-02",  "actor": "AlpineDry Manufacturing", "ts": "2026-07-11T02:00:00Z"},
+  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-BD-02",  "actor": "AlpineDry QC Lab",        "ts": "2026-07-12T05:00:00Z"},
+  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-BD-02",  "actor": "AlpineDry Manufacturing", "ts": "2026-07-12T10:00:00Z"},
+  {"sku": "0950600013442", "batch": "B-AD-2026-07", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-CGP",       "actor": "PanTrans Logistics",      "ts": "2026-07-15T08:00:00Z"},
+
+  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-VN-09",  "actor": "SummitShell Apparel",   "ts": "2026-08-05T01:30:00Z"},
+  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-VN-09",  "actor": "SummitShell QC Lab",    "ts": "2026-08-06T06:00:00Z"},
+  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-VN-09",  "actor": "SummitShell Apparel",   "ts": "2026-08-06T11:00:00Z"},
+  {"sku": "0950600013459", "batch": "B-SS-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SGN",       "actor": "PanTrans Logistics",    "ts": "2026-08-09T09:00:00Z"},
+
+  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-CN-21",  "actor": "PureFlow Filtration",  "ts": "2026-06-14T03:00:00Z"},
+  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-CN-21",  "actor": "PureFlow QC Lab",      "ts": "2026-06-15T07:00:00Z"},
+  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-CN-21",  "actor": "PureFlow Filtration",  "ts": "2026-06-15T12:00:00Z"},
+  {"sku": "0950600013466", "batch": "B-PF-2026-06", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SHA",       "actor": "PanTrans Logistics",   "ts": "2026-06-18T10:00:00Z"},
+
+  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-CN-07",  "actor": "NovaBeam Electronics", "ts": "2026-08-01T02:00:00Z"},
+  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-CN-07",  "actor": "NovaBeam QC Lab",      "ts": "2026-08-02T05:30:00Z"},
+  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-CN-07",  "actor": "NovaBeam Electronics", "ts": "2026-08-02T09:00:00Z"},
+  {"sku": "0950600013473", "batch": "B-NB-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SHA",       "actor": "PanTrans Logistics",   "ts": "2026-08-05T07:00:00Z"},
+
+  {"sku": "0950600013480", "batch": "B-GD-2026-05", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-MN-03",  "actor": "GlacierDown Outdoor", "ts": "2026-05-20T02:00:00Z"},
+  {"sku": "0950600013480", "batch": "B-GD-2026-05", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-MN-03",  "actor": "GlacierDown Outdoor", "ts": "2026-05-21T09:00:00Z"},
+  {"sku": "0950600013480", "batch": "B-GD-2026-05", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-TAO",       "actor": "PanTrans Logistics",  "ts": "2026-05-24T08:00:00Z", "note": "quality_control event never received from Factory-MN-03 -- known chain gap for this batch"},
+
+  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-TW-05",  "actor": "TrekLite Composites",  "ts": "2026-08-09T02:00:00Z"},
+  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-TW-05",  "actor": "TrekLite QC Lab",      "ts": "2026-08-10T06:00:00Z"},
+  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-TW-05",  "actor": "TrekLite Composites",  "ts": "2026-08-10T10:00:00Z"},
+  {"sku": "0950600013497", "batch": "B-TL-2026-08", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-KHH",       "actor": "PanTrans Logistics",   "ts": "2026-08-13T09:00:00Z"},
+
+  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "ObjectEvent", "biz_step": "manufacturing",   "location": "Factory-CN-11",  "actor": "CamelRidge Hydration", "ts": "2026-04-18T02:00:00Z"},
+  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "ObjectEvent", "biz_step": "quality_control", "location": "Factory-CN-11",  "actor": "CamelRidge QC Lab",    "ts": "2026-04-19T05:00:00Z"},
+  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "AggregationEvent", "biz_step": "packaging",  "location": "Factory-CN-11",  "actor": "CamelRidge Hydration", "ts": "2026-04-19T10:00:00Z"},
+  {"sku": "0950600013503", "batch": "B-CR-2026-04", "event_type": "TransactionEvent", "biz_step": "shipping",   "location": "Port-SHA",       "actor": "PanTrans Logistics",   "ts": "2026-04-22T08:00:00Z"}
+]

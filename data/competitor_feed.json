@@ -1,0 +1,29 @@
+[
+  {"sku": "0950600013435", "competitor": "TrailWorld",  "price": 142.00, "currency": "AUD", "ts": "2026-09-07T02:10:00Z"},
+  {"sku": "0950600013435", "competitor": "PeakGear",    "price": 138.50, "currency": "AUD", "ts": "2026-09-07T02:12:00Z"},
+  {"sku": "0950600013435", "competitor": "OutdoorHub",  "price": 6.00,   "currency": "AUD", "ts": "2026-09-07T02:13:00Z", "note": "scrape error / outlier"},
+  {"sku": "0950600013435", "competitor": "SummitStore", "price": 145.90, "currency": "AUD", "ts": "2026-09-07T02:14:00Z"},
+
+  {"sku": "0950600013442", "competitor": "TrailWorld",  "price": 168.00, "currency": "AUD", "ts": "2026-09-07T02:10:00Z"},
+  {"sku": "0950600013442", "competitor": "PeakGear",    "price": 162.50, "currency": "AUD", "ts": "2026-09-07T02:11:00Z"},
+  {"sku": "0950600013442", "competitor": "SummitStore", "price": 171.00, "currency": "AUD", "ts": "2026-09-07T02:15:00Z"},
+
+  {"sku": "0950600013459", "competitor": "TrailWorld",  "price": 199.00, "currency": "AUD", "ts": "2026-09-07T02:09:00Z"},
+  {"sku": "0950600013459", "competitor": "OutdoorHub",  "price": 205.50, "currency": "AUD", "ts": "2026-09-07T02:12:00Z"},
+  {"sku": "0950600013459", "competitor": "PeakGear",    "price": 194.90, "currency": "AUD", "ts": "2026-09-07T02:16:00Z"},
+
+  {"sku": "0950600013466", "competitor": "TrailWorld",  "price": 39.90, "currency": "AUD", "ts": "2026-09-07T02:10:00Z"},
+  {"sku": "0950600013466", "competitor": "SummitStore", "price": 41.00, "currency": "AUD", "ts": "2026-09-07T02:13:00Z"},
+
+  {"sku": "0950600013473", "competitor": "PeakGear",    "price": 52.00, "currency": "AUD", "ts": "2026-09-07T02:11:00Z"},
+  {"sku": "0950600013473", "competitor": "OutdoorHub",  "price": 49.90, "currency": "AUD", "ts": "2026-09-07T02:14:00Z"},
+
+  {"sku": "0950600013480", "competitor": "TrailWorld",  "price": 259.00, "currency": "AUD", "ts": "2026-09-07T02:10:00Z"},
+  {"sku": "0950600013480", "competitor": "SummitStore", "price": 249.90, "currency": "AUD", "ts": "2026-09-07T02:15:00Z"},
+
+  {"sku": "0950600013497", "competitor": "PeakGear",    "price": 64.90, "currency": "AUD", "ts": "2026-09-07T02:12:00Z"},
+  {"sku": "0950600013497", "competitor": "OutdoorHub",  "price": 68.00, "currency": "AUD", "ts": "2026-09-07T02:13:00Z"},
+
+  {"sku": "0950600013503", "competitor": "TrailWorld",  "price": 28.90, "currency": "AUD", "ts": "2026-09-07T02:10:00Z"},
+  {"sku": "0950600013503", "competitor": "SummitStore", "price": 27.50, "currency": "AUD", "ts": "2026-09-07T02:14:00Z"}
+]

@@ -1,0 +1,159 @@
+[
+  {
+    "sku": "0950600013435",
+    "gtin": "0950600013435",
+    "name": "TrailPro Waterproof Hiking Boot",
+    "category": "footwear",
+    "description": "A lightweight waterproof hiking boot with an IPX6-rated membrane, Vibram outsole, and a reinforced toe cap. Built for multi-day trail use in wet conditions.",
+    "attributes": {
+      "weight_g": 480,
+      "waterproof_rating": "IPX6",
+      "material": "ripstop nylon + suede leather",
+      "sizes": ["US7", "US8", "US9", "US10", "US11"],
+      "certifications": ["ISO 20344"]
+    },
+    "internal_cost": 62.00,
+    "map_price": 119.00,
+    "list_price": 179.00,
+    "currency": "AUD",
+    "batch": "B-TP-2026-08",
+    "inventory_units": 340
+  },
+  {
+    "sku": "0950600013442",
+    "gtin": "0950600013442",
+    "name": "AlpineDry 45L Trekking Backpack",
+    "category": "bags",
+    "description": "A 45-litre expedition backpack with an adjustable torso harness, hydration-bladder compatibility, and a rain cover for wet-weather trekking.",
+    "attributes": {
+      "weight_g": 1650,
+      "capacity_l": 45,
+      "material": "420D nylon",
+      "waterproof_rating": "IPX4",
+      "certifications": []
+    },
+    "internal_cost": 74.00,
+    "map_price": 139.00,
+    "list_price": 199.00,
+    "currency": "AUD",
+    "batch": "B-AD-2026-07",
+    "inventory_units": 190
+  },
+  {
+    "sku": "0950600013459",
+    "gtin": "0950600013459",
+    "name": "SummitShell Hardshell Rain Jacket",
+    "category": "apparel",
+    "description": "A fully seam-taped 3-layer hardshell jacket, IPX8 waterproof rating, pit-zip ventilation, for alpine and wet-climate hiking.",
+    "attributes": {
+      "weight_g": 340,
+      "waterproof_rating": "IPX8",
+      "material": "3-layer ripstop laminate",
+      "sizes": ["S", "M", "L", "XL"],
+      "certifications": ["bluesign approved"]
+    },
+    "internal_cost": 88.00,
+    "map_price": 169.00,
+    "list_price": 249.00,
+    "currency": "AUD",
+    "batch": "B-SS-2026-08",
+    "inventory_units": 210
+  },
+  {
+    "sku": "0950600013466",
+    "gtin": "0950600013466",
+    "name": "PureFlow Portable Water Filter",
+    "category": "gear",
+    "description": "A 0.1-micron hollow-fibre water filter, removes 99.9999% of bacteria and 99.9% of protozoa, filters up to 1500L before replacement.",
+    "attributes": {
+      "weight_g": 65,
+      "filter_micron": 0.1,
+      "flow_rate_lpm": 1.7,
+      "certifications": ["NSF P231"]
+    },
+    "internal_cost": 14.50,
+    "map_price": 34.90,
+    "list_price": 49.90,
+    "currency": "AUD",
+    "batch": "B-PF-2026-06",
+    "inventory_units": 610
+  },
+  {
+    "sku": "0950600013473",
+    "gtin": "0950600013473",
+    "name": "NovaBeam 800lm Rechargeable Headlamp",
+    "category": "electronics",
+    "description": "An 800-lumen USB-C rechargeable headlamp with IPX7 water resistance, red night-vision mode, and a 40-hour low-power runtime.",
+    "attributes": {
+      "weight_g": 92,
+      "lumens": 800,
+      "waterproof_rating": "IPX7",
+      "battery_mah": 3200,
+      "certifications": ["CE", "RoHS"]
+    },
+    "internal_cost": 19.00,
+    "map_price": 44.90,
+    "list_price": 64.90,
+    "currency": "AUD",
+    "batch": "B-NB-2026-08",
+    "inventory_units": 275
+  },
+  {
+    "sku": "0950600013480",
+    "gtin": "0950600013480",
+    "name": "GlacierDown -12C Sleeping Bag",
+    "category": "gear",
+    "description": "A 700-fill-power down sleeping bag rated to -12C, water-resistant DWR shell, packs to 8 litres.",
+    "attributes": {
+      "weight_g": 1180,
+      "temp_rating_c": -12,
+      "fill_power": 700,
+      "pack_size_l": 8,
+      "certifications": ["RDS certified down"]
+    },
+    "internal_cost": 121.00,
+    "map_price": 219.00,
+    "list_price": 299.00,
+    "currency": "AUD",
+    "batch": "B-GD-2026-05",
+    "inventory_units": 95
+  },
+  {
+    "sku": "0950600013497",
+    "gtin": "0950600013497",
+    "name": "TrekLite Carbon Trekking Poles (Pair)",
+    "category": "gear",
+    "description": "A pair of carbon-fibre trekking poles, 190g each, with cork grips and quick-flip locks.",
+    "attributes": {
+      "weight_g": 380,
+      "material": "carbon fibre",
+      "adjustable_range_cm": [110, 135],
+      "certifications": []
+    },
+    "internal_cost": 26.00,
+    "map_price": 54.90,
+    "list_price": 79.90,
+    "currency": "AUD",
+    "batch": "B-TL-2026-08",
+    "inventory_units": 430
+  },
+  {
+    "sku": "0950600013503",
+    "gtin": "0950600013503",
+    "name": "CamelRidge 3L Hydration Bladder",
+    "category": "gear",
+    "description": "A 3-litre BPA-free hydration bladder with a quick-release bite valve and wide-mouth fill opening for easy cleaning.",
+    "attributes": {
+      "weight_g": 145,
+      "capacity_l": 3,
+      "material": "TPU, BPA-free",
+      "certifications": ["FDA food-contact safe"]
+    },
+    "internal_cost": 9.20,
+    "map_price": 24.90,
+    "list_price": 34.90,
+    "currency": "AUD",
+    "batch": "B-CR-2026-04",
+    "inventory_units": 520
+  }
+]

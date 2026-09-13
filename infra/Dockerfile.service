@@ -1,0 +1,48 @@
+# One Dockerfile for all five Python services -- they differ only in which
+# directory holds their app module, passed as SERVICE at build time. Five
+# near-identical Dockerfiles would be five places to forget a fix.
+FROM python:3.11-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# librdkafka is the C library confluent-kafka binds to. The wheels bundle it,
+# but the runtime lib keeps the image working if pip ever falls back to sdist.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl librdkafka1 \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Dependencies first, as their own layer: application code changes on every
+# commit, dependencies change rarely, so this keeps rebuilds to seconds.
+COPY libs/agentmarket_core/pyproject.toml /app/libs/agentmarket_core/
+COPY requirements.txt /app/
+RUN pip install -r /app/requirements.txt
+
+COPY libs/ /app/libs/
+RUN pip install --no-deps -e /app/libs/agentmarket_core
+
+ARG SERVICE
+ENV SERVICE=${SERVICE}
+COPY services/${SERVICE}/ /app/service/
+COPY data/ /app/data/
+COPY scripts/ /app/scripts/
+
+# Non-root. The signing key directory is created and handed over here so the
+# verification service can write its key on first boot without running as root.
+RUN useradd --create-home --uid 10001 agentmarket \
+ && mkdir -p /var/lib/agentmarket \
+ && chown -R agentmarket:agentmarket /var/lib/agentmarket /app
+USER agentmarket
+
+WORKDIR /app/service
+ENV PYTHONPATH=/app/service
+EXPOSE 8000
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
+  CMD curl -fsS http://localhost:8000/live || exit 1
+
+CMD ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,247 @@
+# AgentMarket OS -- full production-shaped stack.
+#
+#   docker compose -f infra/docker-compose.yml up --build
+#
+# Brings up Kafka (KRaft, no ZooKeeper), Postgres with pgvector, Redis,
+# Ollama, a one-shot seed job, the five services and the Next.js UI.
+#
+# Run from the repository root -- the build context is the repo root so the
+# service images can copy both `libs/` and their own `services/<name>/`.
+#
+# Ordering is handled with healthchecks plus `depends_on: condition`, not
+# sleeps. Every service additionally retries its own dependencies on startup,
+# so the stack converges even if something restarts underneath it.
+
+name: agentmarket-os
+
+x-service-env: &service-env
+  DATABASE_URL: postgresql://agentmarket:agentmarket@postgres:5432/agentmarket
+  REDIS_URL: redis://redis:6379/0
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  EVENT_BUS_BACKEND: kafka
+  FEATURE_STORE_BACKEND: redis
+  PRODUCT_STORE_BACKEND: postgres
+  VECTOR_STORE_BACKEND: pgvector
+  EMBEDDINGS_BACKEND: ollama
+  OLLAMA_BASE_URL: http://ollama:11434
+  OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+  OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+  PRICING_URL: http://pricing:8000
+  STOREFRONT_URL: http://storefront:8000
+  VERIFICATION_URL: http://verification:8000
+  PAYMENTS_URL: http://payments:8000
+  SIGNING_KEY_PATH: /var/lib/agentmarket/keys.json
+  AGENTMARKET_JWT_SECRET: ${AGENTMARKET_JWT_SECRET:-hackathon-demo-secret-do-not-use-in-prod}
+  ENVIRONMENT: compose
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+x-depends-core: &depends-core
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  kafka:
+    condition: service_healthy
+
+services:
+  # --- infrastructure ------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: agentmarket
+      POSTGRES_PASSWORD: agentmarket
+      POSTGRES_DB: agentmarket
+    ports: ["5432:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentmarket -d agentmarket"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    # appendonly: the feature store's online values and the Redis Streams
+    # history both survive a restart, so a compose down/up does not silently
+    # lose the competitor window.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.8.0
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Single broker, so every replication factor must be 1 -- the defaults
+      # are 3 and the internal topics fail to create without this.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: agentmarket-kraft-cluster
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  ollama:
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # Pulls the planner and embedding models once, then exits. Without it the
+  # first query silently falls back to the keyword planner because the model
+  # is not present yet.
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama: { condition: service_healthy }
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama pull ${OLLAMA_MODEL:-llama3.2}
+        ollama pull ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+    restart: "no"
+
+  # --- one-shot seed -------------------------------------------------------
+  # Applies the schema, loads the catalog/feed/provenance data, creates Kafka
+  # topics with explicit partitioning, and builds the vector index.
+  seed:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.service
+      args: { SERVICE: pricing }   # any service image; only the scripts are used
+    working_dir: /app
+    environment: *service-env
+    depends_on:
+      <<: *depends-core
+      ollama-pull: { condition: service_completed_successfully }
+    command: ["/bin/sh", "-c", "python scripts/bootstrap_topics.py && python scripts/seed.py"]
+    restart: "no"
+
+  # --- application services ------------------------------------------------
+  verification:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.service
+      args: { SERVICE: verification }
+    environment:
+      <<: *service-env
+      SERVICE_NAME: verification
+    ports: ["8083:8000"]
+    volumes:
+      # The Ed25519 signing key must outlive the container: a new key on every
+      # restart invalidates every credential ever issued.
+      - signing-keys:/var/lib/agentmarket
+    depends_on:
+      <<: *depends-core
+      seed: { condition: service_completed_successfully }
+
+  pricing:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.service
+      args: { SERVICE: pricing }
+    environment:
+      <<: *service-env
+      SERVICE_NAME: pricing
+    ports: ["8081:8000"]
+    depends_on:
+      <<: *depends-core
+      seed: { condition: service_completed_successfully }
+
+  payments:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.service
+      args: { SERVICE: payments }
+    environment:
+      <<: *service-env
+      SERVICE_NAME: payments
+    ports: ["8084:8000"]
+    depends_on:
+      <<: *depends-core
+      pricing: { condition: service_healthy }
+      verification: { condition: service_healthy }
+
+  storefront:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.service
+      args: { SERVICE: storefront }
+    environment:
+      <<: *service-env
+      SERVICE_NAME: storefront
+    ports: ["8082:8000"]
+    depends_on:
+      <<: *depends-core
+      pricing: { condition: service_healthy }
+      verification: { condition: service_healthy }
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.service
+      args: { SERVICE: gateway }
+    environment:
+      <<: *service-env
+      SERVICE_NAME: gateway
+    ports: ["8080:8000"]
+    depends_on:
+      <<: *depends-core
+      storefront: { condition: service_healthy }
+      payments: { condition: service_healthy }
+
+  # --- UI ------------------------------------------------------------------
+  ui:
+    build:
+      context: ../ui
+      dockerfile: Dockerfile
+      args:
+        # Next.js inlines NEXT_PUBLIC_* at build time, so the browser-facing
+        # gateway URL has to be a build arg, not just a runtime env var. It is
+        # localhost because the *browser* resolves it, not the container.
+        NEXT_PUBLIC_GATEWAY_URL: ${NEXT_PUBLIC_GATEWAY_URL:-http://localhost:8080}
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: ${NEXT_PUBLIC_GATEWAY_URL:-http://localhost:8080}
+    ports: ["3000:3000"]
+    depends_on:
+      gateway: { condition: service_healthy }
+
+volumes:
+  postgres-data:
+  redis-data:
+  kafka-data:
+  ollama-models:
+  signing-keys:
